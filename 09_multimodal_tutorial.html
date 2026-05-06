@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multimodal Models — A Tutorial from First Principles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+<style>
+:root{--paper:#f4ede0;--paper-2:#ebe3d4;--card:#fbf7ef;--ink:#1a1814;--ink-2:#3d3830;--ink-3:#7a7165;--rule:#d9cfba;--accent:#c44a6c;--accent-soft:#e0a0b4;--shadow:0 1px 0 rgba(26,24,20,.04),0 8px 30px -10px rgba(26,24,20,.08)}
+*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{background:var(--paper);color:var(--ink);font-family:'Newsreader',Georgia,serif;font-size:19px;line-height:1.65;font-weight:380;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;background-image:radial-gradient(circle at 60% 15%,rgba(196,74,108,.05),transparent 40%);background-attachment:fixed}
+.shell{max-width:1240px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:240px minmax(0,1fr);gap:64px}@media(max-width:980px){.shell{grid-template-columns:1fr;gap:0;padding:0 22px}.toc{display:none}}
+.toc{position:sticky;top:32px;align-self:start;padding:80px 0 0;font-family:'Fraunces',serif;font-size:13px;letter-spacing:.02em;height:calc(100vh - 32px);overflow-y:auto}
+.toc h4{font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:13px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.18em;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc}.toc li{counter-increment:toc;margin:6px 0;padding-left:28px;position:relative}
+.toc li::before{content:counter(toc,decimal-leading-zero);position:absolute;left:0;top:1px;font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace}
+.toc a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid transparent;transition:border .2s,color .2s}.toc a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+main{max-width:740px;padding:60px 0 120px}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:24px;display:flex;align-items:center;gap:14px}.eyebrow::after{content:"";flex:1;height:1px;background:var(--rule)}
+h1.title{font-family:'Fraunces',serif;font-weight:300;font-size:clamp(48px,7vw,76px);line-height:.95;letter-spacing:-.02em;margin-bottom:18px}h1.title em{font-style:italic;font-weight:400;color:var(--accent)}
+.subtitle{font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:24px;color:var(--ink-2);line-height:1.4;max-width:560px;margin-bottom:36px}
+.byline{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);padding-top:24px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:80px}.byline a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+section{margin:80px 0;scroll-margin-top:24px}
+.chapter-mark{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+.chapter-mark .num{display:inline-flex;width:32px;height:32px;background:var(--ink);color:var(--paper);border-radius:50%;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+h2{font-family:'Fraunces',serif;font-weight:400;font-size:42px;line-height:1.1;letter-spacing:-.015em;margin:14px 0 28px}h2 em{font-style:italic;color:var(--accent);font-weight:300}
+h3{font-family:'Fraunces',serif;font-weight:500;font-style:italic;font-size:24px;margin:40px 0 14px}
+p{margin:0 0 18px;hyphens:auto}
+.lede{font-size:22px;line-height:1.55;color:var(--ink-2);font-family:'Fraunces',serif;font-weight:300}
+.lede:first-letter{font-family:'Fraunces',serif;font-weight:600;font-size:78px;float:left;line-height:.85;margin:6px 10px 0 -2px;color:var(--accent)}
+strong{font-weight:600}.term{font-family:'Fraunces',serif;font-style:italic;font-weight:500;color:var(--accent);border-bottom:1px dotted var(--accent-soft)}
+code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--paper-2);padding:1px 6px;border-radius:3px}
+.pullquote{border-left:3px solid var(--accent);padding:8px 0 8px 24px;margin:32px 0;font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:24px;line-height:1.4;color:var(--ink-2)}
+.aside{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:24px 28px;margin:32px 0;box-shadow:var(--shadow)}
+.aside .label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.2em;margin-bottom:8px;color:var(--accent)}
+.aside.insight{background:linear-gradient(180deg,#fce8ee,#fbf6ec);border-color:var(--accent)}
+.aside.check{background:#eef0e8;border-color:#bcc4ad}.aside.check .label{color:#506348}
+.aside p:last-child{margin-bottom:0}
+figure{margin:40px -40px;background:var(--card);border:1px solid var(--rule);border-radius:8px;overflow:hidden;box-shadow:var(--shadow)}@media(max-width:980px){figure{margin:32px 0}}
+figure svg{display:block;width:100%}
+figcaption{padding:14px 24px 18px;font-family:'Fraunces',serif;font-style:italic;font-size:15px;line-height:1.45;color:var(--ink-2);border-top:1px solid var(--rule)}
+figcaption .src{display:block;font-family:'JetBrains Mono',monospace;font-style:normal;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+.math-display{margin:24px 0;padding:18px 24px;background:var(--card);border-left:3px solid var(--accent);border-radius:0 4px 4px 0;font-size:.95em;overflow-x:auto}
+ul.fancy,ol.fancy{margin:18px 0 24px;padding-left:0;list-style:none}ul.fancy li,ol.fancy li{position:relative;padding-left:32px;margin-bottom:12px}
+ul.fancy li::before{content:"§";position:absolute;left:0;color:var(--accent);font-family:'Fraunces',serif;font-style:italic;font-size:1.1em}
+ol.fancy{counter-reset:fancy}ol.fancy li{counter-increment:fancy}ol.fancy li::before{content:counter(fancy,decimal-leading-zero);position:absolute;left:0;top:3px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600}
+.demo{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:24px;margin:32px 0;box-shadow:var(--shadow)}
+.demo button{background:var(--ink);color:var(--paper);border:none;padding:8px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;border-radius:3px;cursor:pointer;transition:background .2s}.demo button:hover{background:var(--accent)}
+.ornament{text-align:center;font-family:'Fraunces',serif;font-style:italic;font-size:32px;color:var(--accent);margin:60px 0 40px;opacity:.5;letter-spacing:.5em}
+footer{margin-top:120px;padding-top:40px;border-top:1px solid var(--rule);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);line-height:1.7}footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+</style>
+</head>
+<body>
+<a href="index.html" class="home-link" aria-label="Back to landing page">← Home</a>
+<style>
+.home-link{position:fixed;top:18px;left:22px;z-index:100;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--rust,#b03d1a);background:var(--card,#fbf6ec);border:1px solid var(--rule,#d9cfba);border-radius:14px;padding:6px 12px;text-decoration:none;box-shadow:0 2px 10px -4px rgba(26,24,20,.15);transition:background .15s,color .15s,border-color .15s}
+.home-link:hover{background:var(--rust,#b03d1a);color:#fff;border-color:var(--rust,#b03d1a)}
+</style>
+<div class="shell">
+<nav class="toc"><h4>Tutorial</h4><ol>
+  <li><a href="#challenge">The multimodal challenge</a></li>
+  <li><a href="#clip">CLIP: contrastive learning</a></li>
+  <li><a href="#t2i">Text-to-image generation</a></li>
+  <li><a href="#i2t">Image-to-text understanding</a></li>
+  <li><a href="#unified">The convergence thesis</a></li>
+  <li><a href="#audio">Audio &amp; video</a></li>
+  <li><a href="#fieldnotes">Field notes: Mini-CLIP</a></li>
+  <li><a href="#playground">Interactive: similarity matrix</a></li>
+  <li><a href="#takeaways">Takeaways &amp; exercises</a></li>
+</ol></nav>
+<main>
+<header>
+  <div class="eyebrow">A First-Principles Tutorial · Chapter 09</div>
+  <h1 class="title">Multi<em>modal</em></h1>
+  <p class="subtitle">Connecting vision, language, and audio — from CLIP to Stable Diffusion to Sora.</p>
+  <div class="byline"><span>By Prashant Kulkarni · with help from Claude Opus</span><span><a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a></span></div>
+</header>
+
+<section id="challenge">
+  <div class="chapter-mark"><span class="num">1</span> The challenge</div>
+  <h2>Making models see, hear, <em>and read</em></h2>
+  <p class="lede">For most of deep learning's history, models were unimodal: a language model processes text, an image classifier processes pixels, a speech recognizer processes audio. Multimodal models bridge these domains, learning shared representations that connect language, vision, audio, and more — enabling generation and understanding across modalities.</p>
+  <p>The core challenge: different modalities have fundamentally different structures. Text is discrete and sequential. Images are continuous and spatial. Audio is continuous and temporal. The model must learn that the word "cat," a photo of a cat, and the sound of a meow all refer to the same concept.</p>
+</section>
+
+<section id="clip">
+  <div class="chapter-mark"><span class="num">2</span> Foundation</div>
+  <h2>CLIP — contrastive <em>vision-language</em></h2>
+  <p><span class="term">CLIP</span> (Radford et al., 2021) learns a shared embedding space for images and text via <strong>contrastive learning</strong>: given a batch of image-caption pairs, train an image encoder and a text encoder so that matching pairs have high cosine similarity and non-matching pairs have low similarity.</p>
+  <div class="math-display">$$\mathcal{L}_i^{I \to T} = -\log \frac{\exp(\text{sim}(I_i, T_i) / \tau)}{\sum_j \exp(\text{sim}(I_i, T_j) / \tau)}$$</div>
+  <figure>
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" style="background:#fff">
+      <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7a7165"/></marker></defs>
+      <text x="360" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">CLIP: two encoders, one shared space, contrastive training</text>
+      <!-- Image side -->
+      <rect x="30" y="60" width="80" height="50" rx="4" fill="#3a5a72"/><text x="70" y="82" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">image</text><text x="70" y="98" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">pixels</text>
+      <line x1="110" y1="85" x2="140" y2="85" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="144" y="52" width="120" height="66" rx="4" fill="#3a5a72"/><text x="204" y="78" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">Image Encoder</text><text x="204" y="96" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">ViT / ResNet</text>
+      <line x1="264" y1="85" x2="310" y2="85" stroke="#7a7165" stroke-width="1.5"/>
+      <line x1="310" y1="85" x2="310" y2="128" stroke="#7a7165" stroke-width="1.5"/>
+      <!-- Text side -->
+      <rect x="30" y="160" width="80" height="50" rx="4" fill="#c44a6c"/><text x="70" y="182" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">text</text><text x="70" y="198" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">"a cat"</text>
+      <line x1="110" y1="185" x2="140" y2="185" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="144" y="152" width="120" height="66" rx="4" fill="#c44a6c"/><text x="204" y="178" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">Text Encoder</text><text x="204" y="196" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">Transformer</text>
+      <line x1="264" y1="185" x2="310" y2="185" stroke="#7a7165" stroke-width="1.5"/>
+      <line x1="310" y1="185" x2="310" y2="148" stroke="#7a7165" stroke-width="1.5"/>
+      <!-- Cosine similarity -->
+      <rect x="280" y="118" width="120" height="40" rx="4" fill="#b88528"/><text x="340" y="142" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">cosine sim</text>
+      <!-- Arrows to contrastive loss -->
+      <line x1="400" y1="138" x2="440" y2="138" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- N×N matrix -->
+      <rect x="444" y="68" width="140" height="140" rx="4" fill="#fcf8ee" stroke="#c44a6c" stroke-width="1.5"/>
+      <text x="514" y="92" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#c44a6c" font-weight="600">N × N matrix</text>
+      <!-- Diagonal cells (matching) -->
+      <rect x="456" y="100" width="24" height="24" rx="2" fill="#506348" opacity=".8"/>
+      <rect x="486" y="124" width="24" height="24" rx="2" fill="#506348" opacity=".8"/>
+      <rect x="516" y="148" width="24" height="24" rx="2" fill="#506348" opacity=".8"/>
+      <rect x="546" y="172" width="24" height="24" rx="2" fill="#506348" opacity=".8"/>
+      <!-- Off-diagonal (non-matching) -->
+      <rect x="486" y="100" width="24" height="24" rx="2" fill="#b03d1a" opacity=".15"/>
+      <rect x="516" y="100" width="24" height="24" rx="2" fill="#b03d1a" opacity=".15"/>
+      <rect x="546" y="100" width="24" height="24" rx="2" fill="#b03d1a" opacity=".15"/>
+      <rect x="456" y="124" width="24" height="24" rx="2" fill="#b03d1a" opacity=".15"/>
+      <rect x="456" y="148" width="24" height="24" rx="2" fill="#b03d1a" opacity=".15"/>
+      <rect x="456" y="172" width="24" height="24" rx="2" fill="#b03d1a" opacity=".15"/>
+      <!-- Labels -->
+      <text x="490" y="216" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#506348">diagonal = match ↑</text>
+      <text x="610" y="138" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a">off-diag ↓</text>
+      <text x="360" y="256" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">CLIP doesn't generate — it connects modalities in a shared embedding space</text>
+    </svg>
+    <figcaption>CLIP architecture: two encoders project images and text into a shared $d$-dimensional space. Contrastive training maximizes similarity between matching pairs (green diagonal) and minimizes it for non-matching pairs (red off-diagonal). This shared space enables zero-shot classification, retrieval, and generation guidance.<span class="src">Original SVG · concept after Radford et al. (2021)</span></figcaption>
+  </figure>
+  <p><strong>Zero-shot classification</strong>: encode an image and a set of text labels ("a photo of a cat", "a photo of a dog"), predict the class with maximum cosine similarity. No task-specific training needed. CLIP matched supervised ResNet-50 on ImageNet — without ever seeing ImageNet labels during training.</p>
+  <div class="aside insight"><div class="label">Why CLIP changed everything</div>
+  <p>CLIP's embedding space became the foundation for text-to-image generation (Stable Diffusion uses CLIP text embeddings as conditioning), image search, visual question answering, and video understanding. It's not a generative model — it's the <em>bridge</em> that makes multimodal generation possible.</p></div>
+</section>
+
+<section id="t2i">
+  <div class="chapter-mark"><span class="num">3</span> Generation</div>
+  <h2>Text-to-image — from DALL-E <em>to Stable Diffusion</em></h2>
+  <p>The text-to-image pipeline combines a text encoder (CLIP or T5) with an image generator (diffusion or flow model). The text embedding is injected into the denoising process via cross-attention — exactly the encoder-decoder mechanism from Chapter 08.</p>
+  <figure>
+    <svg viewBox="0 0 720 180" xmlns="http://www.w3.org/2000/svg" style="background:#fff">
+      <text x="360" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Text-to-image pipeline: text encoder → conditioning → diffusion/flow → VAE decode → pixels</text>
+      <rect x="20" y="56" width="100" height="50" rx="4" fill="#c44a6c"/><text x="70" y="78" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">prompt</text><text x="70" y="94" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity=".8">"a cat on mars"</text>
+      <line x1="120" y1="81" x2="144" y2="81" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="148" y="56" width="100" height="50" rx="4" fill="#c44a6c"/><text x="198" y="78" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">CLIP / T5</text><text x="198" y="94" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity=".8">text encoder</text>
+      <line x1="248" y1="81" x2="272" y2="81" stroke="#7a7165" stroke-width="1.5"/>
+      <line x1="272" y1="81" x2="272" y2="66" stroke="#7a7165" stroke-width="1.5"/>
+      <rect x="276" y="40" width="180" height="76" rx="4" fill="#3a5a72"/><text x="366" y="64" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">Diffusion / Flow</text><text x="366" y="80" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity=".8">U-Net or DiT</text><text x="366" y="96" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity=".8">cross-attn to text emb</text><text x="366" y="108" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity=".8">→ denoised latents</text>
+      <line x1="456" y1="78" x2="480" y2="78" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="484" y="56" width="100" height="50" rx="4" fill="#506348"/><text x="534" y="78" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">VAE decode</text><text x="534" y="94" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity=".8">latent → pixels</text>
+      <line x1="584" y1="81" x2="608" y2="81" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="612" y="56" width="80" height="50" rx="4" fill="#fff" stroke="#7a7165"/><text x="652" y="84" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830" font-weight="600">image</text>
+      <text x="360" y="150" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">DALL-E 1 → DALL-E 2 → Stable Diffusion → Midjourney → DALL-E 3 → Flux</text>
+    </svg>
+    <figcaption>The Stable Diffusion pipeline: the text prompt is encoded by CLIP/T5, injected via cross-attention into a diffusion (or flow matching) process that denoises in a latent space, and the VAE decoder converts latents to pixels. Each generation improved text faithfulness, visual quality, and inference speed.<span class="src">Original SVG</span></figcaption>
+  </figure>
+</section>
+
+<section id="i2t">
+  <div class="chapter-mark"><span class="num">4</span> Understanding</div>
+  <h2>Image-to-text — <em>visual understanding</em></h2>
+  <p>The reverse: given an image, generate a description or answer questions. <span class="term">LLaVA</span> (Liu et al., 2023) showed a simple approach: take a pretrained vision encoder (CLIP ViT), project its output into the token space of a pretrained LLM (LLaMA), and fine-tune on visual instruction data. The LLM treats image tokens the same as text tokens — no architectural changes needed.</p>
+  <p>GPT-4V, Claude, Gemini, and other frontier models now handle images natively. Visual understanding has become a standard capability, not a separate research area.</p>
+</section>
+
+<section id="unified">
+  <div class="chapter-mark"><span class="num">5</span> Convergence</div>
+  <h2>The convergence thesis — <em>tokenize everything</em></h2>
+  <p>The field is converging on a unified framework: <strong>tokenize everything, then model the tokens</strong>.</p>
+  <ul class="fancy">
+    <li>Text is already tokens (BPE, SentencePiece).</li>
+    <li>Images are tokenized via VQ-VAE, patch embeddings, or VAE latents.</li>
+    <li>Audio is tokenized via EnCodec, SoundStream, or Whisper features.</li>
+    <li>Video is tokenized frame by frame (spatial-temporal patches).</li>
+  </ul>
+  <p>Once everything is tokens, a single transformer can model any modality and any cross-modal relationship. The modality-specific encoders handle compression; the transformer handles reasoning and generation.</p>
+  <div class="pullquote">"The future isn't separate models for text, images, and audio. It's one model that speaks all languages — including the language of pixels and waveforms."</div>
+</section>
+
+<section id="audio">
+  <div class="chapter-mark"><span class="num">6</span> Beyond images</div>
+  <h2>Audio, video, <em>and 3D</em></h2>
+  <ul class="fancy">
+    <li><strong>Audio generation</strong> (MusicGen, Stable Audio): VQ-VAE tokenization of audio + autoregressive or diffusion generation. Text-to-speech, text-to-music, and audio editing use this framework.</li>
+    <li><strong>Video generation</strong> (Sora, Kling, Runway): extends image diffusion to the temporal dimension with 3D attention (spatial + temporal). The core challenge: temporal consistency across frames.</li>
+    <li><strong>3D generation</strong> (DreamFusion, Zero-1-to-3): uses 2D diffusion priors to optimize 3D representations via score distillation sampling — a diffusion model guides 3D construction without 3D training data.</li>
+  </ul>
+</section>
+
+<section id="fieldnotes">
+  <div class="chapter-mark"><span class="num">7</span> Field notes</div>
+  <h2>Building Mini-CLIP <em>from scratch</em></h2>
+  <div class="aside"><div class="label">Source</div><p>Experiments from the <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/09-multimodal/notebook.ipynb">Module 09 notebook</a>. Builds a complete Mini-CLIP model from scratch on MNIST digits paired with digit name text.</p></div>
+  <h3>Architecture</h3>
+  <p>The notebook implements a complete CLIP system: a CNN image encoder and a transformer text encoder, both projecting into a shared 128-dimensional embedding space. Trained on MNIST images paired with text labels ("zero" through "nine") using InfoNCE contrastive loss.</p>
+  <h3>Shared embedding space</h3>
+  <p>t-SNE visualization of the trained embeddings shows that images and text of the same digit class cluster together in the shared space — a "3" image is close to the text "three" and far from "seven." The two modalities overlap, demonstrating that the contrastive objective has learned a genuinely shared semantic space.</p>
+  <h3>Zero-shot classification</h3>
+  <p>Using Mini-CLIP for zero-shot classification (compare image embedding to all 10 text embeddings, predict the closest) achieves ~85% accuracy on MNIST — without ever training a classifier. The model learned to match images to text labels purely from contrastive training. Per-class accuracy reveals that some digits (1, 0) are easier to distinguish than others (3, 5, 8) where visual similarity causes confusion.</p>
+  <h3>Cross-modal retrieval</h3>
+  <p>Given the text query "three," retrieve the top-5 most similar images from the test set — they're all 3s. Given an image of a 7, retrieve the most similar text — it's "seven." The embedding space supports bidirectional retrieval across modalities.</p>
+  <h3>N×N similarity matrix</h3>
+  <p>A 10×10 similarity matrix (one image per digit vs. all 10 text labels) shows a striking pattern: the diagonal is bright (high similarity for correct matches) and the off-diagonal is dark (low similarity for incorrect matches). The few bright off-diagonal cells reveal which digits the model confuses (e.g., "3" and "eight" have slightly elevated similarity because 3 and 8 share visual features).</p>
+</section>
+
+<section id="playground">
+  <div class="chapter-mark"><span class="num">8</span> Playground</div>
+  <h2>CLIP similarity <em>matrix</em></h2>
+  <p>A simulated 8×8 cross-modal similarity matrix: images (rows) vs text labels (columns). Diagonal entries are high (correct matches); off-diagonal entries reveal which classes the model confuses. Click "shuffle" to simulate different training runs.</p>
+  <div class="demo" id="clip-demo">
+    <div style="display:flex;gap:10px;margin-bottom:14px;font-family:'JetBrains Mono',monospace;font-size:11px">
+      <button id="cm-shuffle">↻ Shuffle similarities</button>
+    </div>
+    <canvas id="cm-canvas" width="460" height="440" style="width:100%;max-width:460px;border:1px solid var(--rule);border-radius:4px;background:#fff;display:block;margin:0 auto"></canvas>
+  </div>
+</section>
+
+<div class="ornament">⁂ ⁂ ⁂</div>
+
+<section id="takeaways">
+  <div class="chapter-mark"><span class="num">9</span> Closing</div>
+  <h2>Takeaways &amp; <em>exercises</em></h2>
+  <ol class="fancy">
+    <li><strong>CLIP connects vision and language</strong> through contrastive learning in a shared embedding space — the foundation for text-to-image and zero-shot classification.</li>
+    <li><strong>Text-to-image generation</strong> combines text encoders (CLIP/T5) with diffusion/flow generators — cross-attention is the bridge (same mechanism as Chapter 08).</li>
+    <li><strong>Image-to-text</strong> (LLaVA approach): project visual features into a language model's token space. Simple, effective, now standard in frontier models.</li>
+    <li><strong>The convergence thesis: tokenize everything</strong> — once all modalities are tokens, one transformer handles them all.</li>
+    <li><strong>Contrastive learning doesn't generate</strong> — it creates the shared space that makes generation possible when combined with other models.</li>
+  </ol>
+  <div class="aside check"><div class="label">Exercises</div>
+    <p><strong>1.</strong> Why does CLIP use contrastive learning rather than generative training? What advantage does the shared embedding space give for downstream tasks?</p>
+    <p><strong>2.</strong> Open the notebook. Train Mini-CLIP and examine the zero-shot classification confusion matrix. Which digit pairs are most confused? Why?</p>
+    <p><strong>3.</strong> Explain how Stable Diffusion uses CLIP: where does the text embedding enter the diffusion process, and through what mechanism?</p>
+    <p><strong>4.</strong> In the playground above, look at the off-diagonal entries. Which pairs have the highest non-matching similarity? Do these make semantic sense?</p>
+  </div>
+  <h3>Further reading</h3>
+  <ul class="fancy">
+    <li>Radford et al. (2021) — <em>CLIP: Learning Transferable Visual Models</em>.</li>
+    <li>Ramesh et al. (2021/2022) — <em>DALL-E</em> and <em>DALL-E 2</em>.</li>
+    <li>Rombach et al. (2022) — <em>Latent Diffusion / Stable Diffusion</em>.</li>
+    <li>Liu et al. (2023) — <em>LLaVA: Visual Instruction Tuning</em>.</li>
+    <li>Brooks et al. (2024) — <em>Sora: Video Generation</em>.</li>
+    <li>Défossez et al. (2022) — <em>EnCodec: Audio Neural Codec</em>.</li>
+    <li>P. Kulkarni — <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/09-multimodal/notebook.ipynb"><em>Module 09 notebook</em></a>. Mini-CLIP from scratch.</li>
+  </ul>
+</section>
+
+<footer>
+  <p style="margin-bottom:14px">All figures are original SVGs. Conceptual structure draws on the companion notes and cited papers.</p>
+  <hr style="border:none;border-top:1px solid var(--rule);margin:24px 0">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+    <div><div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7165;margin-bottom:6px">Author</div><div>Prashant Kulkarni<br><span style="color:#7a7165">with help from Claude Opus (Anthropic)</span></div></div>
+    <div><div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7165;margin-bottom:6px">License</div><div><a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a><br><span style="color:#7a7165">Free to share &amp; adapt for non-commercial use, with attribution.</span></div></div>
+  </div>
+  <p style="margin-top:18px;font-size:11px;color:#7a7165">Part of the <em style="font-family:'Fraunces',serif;font-size:13px">learn-generative-ai</em> tutorial series · Chapter 09 of 10 · v1.0</p>
+</footer>
+</main>
+</div>
+<script>
+"use strict";
+const labels=['cat','dog','car','bird','fish','tree','sun','moon'];
+const cc=document.getElementById('cm-canvas');
+const cctx=cc?cc.getContext('2d'):null;
+let simMatrix=[];
+function genSim(){
+  simMatrix=[];
+  for(let i=0;i<8;i++){const row=[];for(let j=0;j<8;j++){
+    if(i===j) row.push(0.7+Math.random()*0.25);
+    else row.push(Math.random()*0.25);
+  }simMatrix.push(row)}
+  // Add some confusions
+  const confusions=[[0,1],[3,4],[6,7]];
+  for(const[a,b] of confusions){simMatrix[a][b]+=0.15;simMatrix[b][a]+=0.15}
+}
+function drawCM(){
+  if(!cctx)return;const W=460,H=440;cctx.clearRect(0,0,W,H);
+  const oX=80,oY=50,cS=44;
+  cctx.font='bold 10px "JetBrains Mono"';cctx.textAlign='center';
+  cctx.fillStyle='#c44a6c';
+  for(let j=0;j<8;j++) cctx.fillText(labels[j],oX+j*cS+cS/2,oY-8);
+  cctx.textAlign='right';cctx.fillStyle='#3a5a72';
+  for(let i=0;i<8;i++) cctx.fillText(labels[i],oX-6,oY+i*cS+cS/2+4);
+  // Labels
+  cctx.font='9px "JetBrains Mono"';cctx.textAlign='center';
+  cctx.fillStyle='#c44a6c';cctx.fillText('TEXT LABELS →',oX+4*cS,oY-28);
+  cctx.save();cctx.translate(oX-40,oY+4*cS);cctx.rotate(-Math.PI/2);
+  cctx.fillStyle='#3a5a72';cctx.fillText('← IMAGES',0,0);cctx.restore();
+  // Cells
+  for(let i=0;i<8;i++)for(let j=0;j<8;j++){
+    const v=simMatrix[i][j];
+    const r=Math.round(252-v*200),g=Math.round(244-v*180),b=Math.round(232-v*120);
+    cctx.fillStyle=`rgb(${r},${g},${b})`;
+    if(i===j) cctx.fillStyle=`rgba(80,99,72,${0.2+v*0.7})`;
+    else if(v>0.3) cctx.fillStyle=`rgba(196,74,108,${v*0.8})`;
+    cctx.fillRect(oX+j*cS,oY+i*cS,cS-2,cS-2);
+    if(v>0.15){cctx.fillStyle=v>0.5?'#fff':'#3d3830';cctx.font='bold 10px "JetBrains Mono"';cctx.textAlign='center';
+    cctx.fillText(v.toFixed(2),oX+j*cS+cS/2-1,oY+i*cS+cS/2+3)}
+  }
+  cctx.strokeStyle='#d9cfba';cctx.strokeRect(oX,oY,8*cS-2,8*cS-2);
+  // Legend
+  const ly=oY+8*cS+20;
+  cctx.fillStyle='rgba(80,99,72,0.7)';cctx.fillRect(oX,ly,14,14);
+  cctx.fillStyle='#3d3830';cctx.font='10px "JetBrains Mono"';cctx.textAlign='left';
+  cctx.fillText('correct match (diagonal)',oX+20,ly+11);
+  cctx.fillStyle='rgba(196,74,108,0.5)';cctx.fillRect(oX+220,ly,14,14);
+  cctx.fillStyle='#3d3830';cctx.fillText('high off-diagonal = confusion',oX+240,ly+11);
+}
+if(cc){genSim();drawCM();document.getElementById('cm-shuffle').addEventListener('click',()=>{genSim();drawCM()})}
+const sections=document.querySelectorAll('section[id]');const tocLinks=document.querySelectorAll('.toc a');
+const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){tocLinks.forEach(l=>l.style.color='');const a=document.querySelector(`.toc a[href="#${e.target.id}"]`);if(a)a.style.color='var(--accent)'}})},{rootMargin:'-30% 0px -60% 0px'});
+sections.forEach(s=>observer.observe(s));
+</script>
+</body>
+</html>

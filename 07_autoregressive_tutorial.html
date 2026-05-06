@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autoregressive Models — A Tutorial from First Principles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+<style>
+:root{--paper:#f4ede0;--paper-2:#ebe3d4;--card:#fbf7ef;--ink:#1a1814;--ink-2:#3d3830;--ink-3:#7a7165;--rule:#d9cfba;--accent:#7a3a8a;--accent-soft:#b88ac4;--rust:#b03d1a;--sage:#506348;--gold:#b88528;--indigo:#3a5a72;--shadow:0 1px 0 rgba(26,24,20,.04),0 8px 30px -10px rgba(26,24,20,.08)}
+*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{background:var(--paper);color:var(--ink);font-family:'Newsreader',Georgia,serif;font-size:19px;line-height:1.65;font-weight:380;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;background-image:radial-gradient(circle at 40% 15%,rgba(122,58,138,.05),transparent 40%),radial-gradient(circle at 60% 80%,rgba(184,133,40,.04),transparent 50%);background-attachment:fixed}
+.shell{max-width:1240px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:240px minmax(0,1fr);gap:64px}
+@media(max-width:980px){.shell{grid-template-columns:1fr;gap:0;padding:0 22px}.toc{display:none}}
+.toc{position:sticky;top:32px;align-self:start;padding:80px 0 0;font-family:'Fraunces',serif;font-size:13px;letter-spacing:.02em;height:calc(100vh - 32px);overflow-y:auto}
+.toc h4{font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:13px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.18em;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc}.toc li{counter-increment:toc;margin:6px 0;padding-left:28px;position:relative}
+.toc li::before{content:counter(toc,decimal-leading-zero);position:absolute;left:0;top:1px;font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace}
+.toc a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid transparent;transition:border .2s,color .2s}.toc a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+main{max-width:740px;padding:60px 0 120px}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:24px;display:flex;align-items:center;gap:14px}.eyebrow::after{content:"";flex:1;height:1px;background:var(--rule)}
+h1.title{font-family:'Fraunces',serif;font-weight:300;font-size:clamp(48px,7vw,84px);line-height:.95;letter-spacing:-.02em;margin-bottom:18px}
+h1.title em{font-style:italic;font-weight:400;color:var(--accent)}
+.subtitle{font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:24px;color:var(--ink-2);line-height:1.4;max-width:560px;margin-bottom:36px}
+.byline{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);padding-top:24px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:80px}
+.byline a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+section{margin:80px 0;scroll-margin-top:24px}
+.chapter-mark{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+.chapter-mark .num{display:inline-flex;width:32px;height:32px;background:var(--ink);color:var(--paper);border-radius:50%;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+h2{font-family:'Fraunces',serif;font-weight:400;font-size:42px;line-height:1.1;letter-spacing:-.015em;margin:14px 0 28px}
+h2 em{font-style:italic;color:var(--accent);font-weight:300}
+h3{font-family:'Fraunces',serif;font-weight:500;font-style:italic;font-size:24px;margin:40px 0 14px}
+p{margin:0 0 18px;hyphens:auto}
+.lede{font-size:22px;line-height:1.55;color:var(--ink-2);font-family:'Fraunces',serif;font-weight:300}
+.lede:first-letter{font-family:'Fraunces',serif;font-weight:600;font-size:78px;float:left;line-height:.85;margin:6px 10px 0 -2px;color:var(--accent)}
+strong{font-weight:600}.term{font-family:'Fraunces',serif;font-style:italic;font-weight:500;color:var(--accent);border-bottom:1px dotted var(--accent-soft)}
+code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--paper-2);padding:1px 6px;border-radius:3px}
+.pullquote{border-left:3px solid var(--accent);padding:8px 0 8px 24px;margin:32px 0;font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:24px;line-height:1.4;color:var(--ink-2)}
+.aside{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:24px 28px;margin:32px 0;box-shadow:var(--shadow)}
+.aside .label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.2em;margin-bottom:8px}
+.aside.insight{background:linear-gradient(180deg,#f0e8f4,#fbf6ec);border-color:var(--accent)}.aside.insight .label{color:var(--accent)}
+.aside.check{background:#eef0e8;border-color:#bcc4ad}.aside.check .label{color:var(--sage)}
+.aside p:last-child{margin-bottom:0}
+figure{margin:40px -40px;background:var(--card);border:1px solid var(--rule);border-radius:8px;overflow:hidden;box-shadow:var(--shadow)}
+@media(max-width:980px){figure{margin:32px 0}}
+figure svg{display:block;width:100%}
+figcaption{padding:14px 24px 18px;font-family:'Fraunces',serif;font-style:italic;font-size:15px;line-height:1.45;color:var(--ink-2);border-top:1px solid var(--rule)}
+figcaption .src{display:block;font-family:'JetBrains Mono',monospace;font-style:normal;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+.math-display{margin:24px 0;padding:18px 24px;background:var(--card);border-left:3px solid var(--accent);border-radius:0 4px 4px 0;font-size:.95em;overflow-x:auto}
+ul.fancy,ol.fancy{margin:18px 0 24px;padding-left:0;list-style:none}
+ul.fancy li,ol.fancy li{position:relative;padding-left:32px;margin-bottom:12px}
+ul.fancy li::before{content:"§";position:absolute;left:0;color:var(--accent);font-family:'Fraunces',serif;font-style:italic;font-size:1.1em}
+ol.fancy{counter-reset:fancy}ol.fancy li{counter-increment:fancy}
+ol.fancy li::before{content:counter(fancy,decimal-leading-zero);position:absolute;left:0;top:3px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600}
+.demo{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:24px;margin:32px 0;box-shadow:var(--shadow)}
+.demo button{background:var(--ink);color:var(--paper);border:none;padding:8px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;border-radius:3px;cursor:pointer;transition:background .2s}.demo button:hover{background:var(--accent)}
+.ornament{text-align:center;font-family:'Fraunces',serif;font-style:italic;font-size:32px;color:var(--accent);margin:60px 0 40px;opacity:.5;letter-spacing:.5em}
+footer{margin-top:120px;padding-top:40px;border-top:1px solid var(--rule);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);line-height:1.7}
+footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+</style>
+</head>
+<body>
+<a href="index.html" class="home-link" aria-label="Back to landing page">← Home</a>
+<style>
+.home-link{position:fixed;top:18px;left:22px;z-index:100;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--rust,#b03d1a);background:var(--card,#fbf6ec);border:1px solid var(--rule,#d9cfba);border-radius:14px;padding:6px 12px;text-decoration:none;box-shadow:0 2px 10px -4px rgba(26,24,20,.15);transition:background .15s,color .15s,border-color .15s}
+.home-link:hover{background:var(--rust,#b03d1a);color:#fff;border-color:var(--rust,#b03d1a)}
+</style>
+<div class="shell">
+<nav class="toc"><h4>Tutorial</h4>
+<ol>
+  <li><a href="#idea">The autoregressive idea</a></li>
+  <li><a href="#ntp">Next-token prediction</a></li>
+  <li><a href="#arch">The GPT architecture</a></li>
+  <li><a href="#decoding">Decoding strategies</a></li>
+  <li><a href="#icl">In-context learning</a></li>
+  <li><a href="#rlhf">RLHF &amp; alignment</a></li>
+  <li><a href="#scaling">Scaling laws</a></li>
+  <li><a href="#kvcache">KV cache &amp; efficiency</a></li>
+  <li><a href="#fieldnotes">Field notes: MiniGPT</a></li>
+  <li><a href="#playground">Interactive: sampling widget</a></li>
+  <li><a href="#takeaways">Takeaways &amp; exercises</a></li>
+</ol>
+</nav>
+<main>
+<header>
+  <div class="eyebrow">A First-Principles Tutorial · Chapter 07</div>
+  <h1 class="title">Auto<em>regressive</em> Models</h1>
+  <p class="subtitle">One token at a time — how next-token prediction became the most powerful idea in AI.</p>
+  <div class="byline"><span>By Prashant Kulkarni · with help from Claude Opus</span><span><a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a></span></div>
+</header>
+
+<!-- ============ 1 ============ -->
+<section id="idea">
+  <div class="chapter-mark"><span class="num">1</span> The core idea</div>
+  <h2>One token <em>at a time</em></h2>
+  <p class="lede">The autoregressive approach to generation is radically simple: model the joint probability of a sequence as a product of conditional probabilities, then generate one element at a time, each conditioned on everything before it.</p>
+  <div class="math-display">$$p(x_1, x_2, \ldots, x_T) = \prod_{t=1}^{T} p(x_t \mid x_1, \ldots, x_{t-1})$$</div>
+  <p>This is the <strong>chain rule of probability</strong> — not an approximation, but an identity. Any joint distribution can be decomposed this way. The modeling choice is <em>how</em> to parameterize each conditional $p(x_t | x_{<t})$: GPT uses a transformer with causal masking; PixelCNN uses masked convolutions; WaveNet uses dilated causal convolutions. The principle is the same.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg" style="background:#fff">
+      <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7a7165"/></marker></defs>
+      <text x="360" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Autoregressive generation: each token conditions on all previous tokens</text>
+      <!-- Step 1 -->
+      <rect x="30" y="50" width="80" height="40" rx="4" fill="#7a3a8a"/><text x="70" y="74" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">p(x₁)</text>
+      <line x1="110" y1="70" x2="130" y2="70" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="134" y="50" width="44" height="40" rx="4" fill="#b88528"/><text x="156" y="74" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" fill="#fff" font-weight="600">The</text>
+      <!-- Step 2 -->
+      <line x1="178" y1="70" x2="198" y2="70" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="202" y="50" width="100" height="40" rx="4" fill="#7a3a8a"/><text x="252" y="74" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">p(x₂|The)</text>
+      <line x1="302" y1="70" x2="322" y2="70" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="326" y="50" width="44" height="40" rx="4" fill="#b88528"/><text x="348" y="74" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" fill="#fff" font-weight="600">cat</text>
+      <!-- Step 3 -->
+      <line x1="370" y1="70" x2="390" y2="70" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="394" y="50" width="130" height="40" rx="4" fill="#7a3a8a"/><text x="459" y="74" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">p(x₃|The,cat)</text>
+      <line x1="524" y1="70" x2="544" y2="70" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="548" y="50" width="44" height="40" rx="4" fill="#b88528"/><text x="570" y="74" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" fill="#fff" font-weight="600">sat</text>
+      <!-- Dots -->
+      <text x="620" y="74" font-family="JetBrains Mono,monospace" font-size="16" fill="#7a7165">···</text>
+      <!-- Context arrows showing conditioning -->
+      <polyline points="156,90 156,130 252,130 252,90" stroke="#b88528" stroke-width="1" stroke-dasharray="3,2" fill="none"/>
+      <polyline points="156,90 156,140 459,140 459,90" stroke="#b88528" stroke-width="1" stroke-dasharray="3,2" fill="none"/>
+      <polyline points="348,90 348,130 459,130 459,90" stroke="#b88528" stroke-width="1" stroke-dasharray="3,2" fill="none"/>
+      <text x="360" y="166" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b88528">each prediction uses all previous tokens as context</text>
+      <!-- Summary -->
+      <rect x="80" y="182" width="560" height="28" rx="4" fill="#f0e8f4" stroke="#7a3a8a"/>
+      <text x="360" y="200" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">p(The, cat, sat, ...) = p(The) · p(cat|The) · p(sat|The,cat) · ···</text>
+    </svg>
+    <figcaption>Autoregressive generation in action. Each token is sampled from a conditional distribution that depends on all previously generated tokens. The chain rule guarantees this product equals the joint probability — no approximation is introduced by the factorization itself.<span class="src">Original SVG</span></figcaption>
+  </figure>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="ntp">
+  <div class="chapter-mark"><span class="num">2</span> The objective</div>
+  <h2>Next-token prediction — <em>the only loss</em></h2>
+  <div class="math-display">$$\mathcal{L} = -\frac{1}{T}\sum_{t=1}^{T} \log p_\theta(x_t \mid x_1, \ldots, x_{t-1})$$</div>
+  <p>This is cross-entropy loss at every position, averaged over the sequence. The model sees a batch of text, predicts the next token at every position <em>in parallel</em> (thanks to causal masking — see Chapter 02), and receives a gradient for every prediction. No labels needed beyond the text itself — the next token IS the label. This is <span class="term">self-supervised learning</span>.</p>
+  <div class="aside insight"><div class="label">The unreasonable effectiveness</div>
+  <p>To predict the next token well, the model must learn syntax, semantics, reasoning, world knowledge, common sense, and style — all compressed into a single objective. This is why scaling works: more parameters and more data directly translate to better next-token prediction, which translates to better performance on essentially every downstream task.</p></div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="arch">
+  <div class="chapter-mark"><span class="num">3</span> Architecture</div>
+  <h2>GPT — <em>decoder-only transformers</em></h2>
+  <p>GPT is a stack of transformer decoder blocks with causal attention masking (covered in detail in Chapter 02). The architecture was described by Radford et al. (2018/2019) and has remained remarkably stable: token embeddings + positional encoding → $N$ transformer blocks (each: LN → causal self-attention → residual → LN → MLP → residual) → final LN → linear projection to vocabulary → softmax.</p>
+  <p>The GPT family progression demonstrates <strong>emergent capabilities at scale</strong>:</p>
+  <ul class="fancy">
+    <li><strong>GPT-1</strong> (2018): 117M parameters. Fine-tuned for each downstream task.</li>
+    <li><strong>GPT-2</strong> (2019): 1.5B parameters. Zero-shot task performance emerges.</li>
+    <li><strong>GPT-3</strong> (2020): 175B parameters. Few-shot in-context learning works.</li>
+    <li><strong>GPT-4</strong> (2023): estimated >1T parameters (MoE). Reasoning, multimodal input.</li>
+  </ul>
+  <p>Each scale-up brought qualitative capability improvements that were not predicted by smaller models.</p>
+</section>
+
+<!-- ============ 4 ============ -->
+<section id="decoding">
+  <div class="chapter-mark"><span class="num">4</span> Sampling</div>
+  <h2>Decoding strategies — how to <em>pick the next token</em></h2>
+  <p>The model outputs a probability distribution over the vocabulary. How you <em>sample</em> from it dramatically affects output quality:</p>
+  <figure>
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" style="background:#fff">
+      <text x="360" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">From raw logits to a selected token — the decoding pipeline</text>
+      <!-- Logits -->
+      <rect x="30" y="60" width="100" height="50" rx="4" fill="#3d3830"/><text x="80" y="82" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">raw logits</text><text x="80" y="98" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">z ∈ ℝᵛ</text>
+      <line x1="130" y1="85" x2="160" y2="85" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- Temperature -->
+      <rect x="164" y="52" width="110" height="66" rx="4" fill="#7a3a8a"/>
+      <text x="219" y="74" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">÷ temp τ</text>
+      <text x="219" y="92" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity=".8">τ<1 sharper</text>
+      <text x="219" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity=".8">τ>1 flatter</text>
+      <line x1="274" y1="85" x2="304" y2="85" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- Softmax -->
+      <rect x="308" y="60" width="80" height="50" rx="4" fill="#b88528"/><text x="348" y="82" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">softmax</text><text x="348" y="98" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">→ probs</text>
+      <line x1="388" y1="85" x2="418" y2="85" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- Top-k / Top-p filter -->
+      <rect x="422" y="52" width="110" height="66" rx="4" fill="#506348"/>
+      <text x="477" y="72" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">filter</text>
+      <text x="477" y="88" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity=".8">top-k: keep k best</text>
+      <text x="477" y="100" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity=".8">top-p: keep until Σ≥p</text>
+      <text x="477" y="112" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity=".8">renormalize</text>
+      <line x1="532" y1="85" x2="562" y2="85" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- Sample -->
+      <rect x="566" y="60" width="100" height="50" rx="4" fill="#b03d1a"/>
+      <text x="616" y="82" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">sample</text>
+      <text x="616" y="98" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">→ token</text>
+      <!-- Comparison row below -->
+      <g font-family="JetBrains Mono,monospace" font-size="9" fill="#3d3830">
+        <rect x="60" y="150" width="160" height="54" rx="4" fill="#fcf8ee" stroke="#e2d8c2"/>
+        <text x="140" y="168" text-anchor="middle" fill="#b03d1a" font-weight="600">Greedy</text>
+        <text x="140" y="184" text-anchor="middle" fill="#7a7165">argmax · deterministic</text>
+        <text x="140" y="198" text-anchor="middle" fill="#7a7165">repetitive, bland</text>
+
+        <rect x="240" y="150" width="160" height="54" rx="4" fill="#fcf8ee" stroke="#e2d8c2"/>
+        <text x="320" y="168" text-anchor="middle" fill="#7a3a8a" font-weight="600">Temperature</text>
+        <text x="320" y="184" text-anchor="middle" fill="#7a7165">controls sharpness</text>
+        <text x="320" y="198" text-anchor="middle" fill="#7a7165">diversity-quality knob</text>
+
+        <rect x="420" y="150" width="220" height="54" rx="4" fill="#f0e8f4" stroke="#7a3a8a" stroke-width="1.5"/>
+        <text x="530" y="168" text-anchor="middle" fill="#7a3a8a" font-weight="600">Top-p (nucleus) ★</text>
+        <text x="530" y="184" text-anchor="middle" fill="#7a7165">adaptive candidate set</text>
+        <text x="530" y="198" text-anchor="middle" fill="#7a7165">τ=0.7 + p=0.9 = standard</text>
+      </g>
+      <text x="360" y="232" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">Standard recipe: temperature 0.7 + top-p 0.9 + repetition penalty 1.1</text>
+      <!-- Arrow labels -->
+      <text x="360" y="256" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">deterministic tasks (code, math): low temp · creative tasks (stories): higher temp + nucleus</text>
+    </svg>
+    <figcaption>The decoding pipeline: raw logits are scaled by temperature, converted to probabilities via softmax, filtered by top-k or top-p, then sampled. The choice of strategy dramatically affects output character — from deterministic and repetitive (greedy) to creative and diverse (nucleus sampling).<span class="src">Original SVG</span></figcaption>
+  </figure>
+  <p><span class="term">Top-p (nucleus) sampling</span> is the adaptive winner: it keeps the smallest set of tokens whose cumulative probability exceeds $p$. When the model is confident, only 2–3 tokens pass; when uncertain, hundreds pass. This is why it produces better text than fixed top-k.</p>
+</section>
+
+<!-- ============ 5 ============ -->
+<section id="icl">
+  <div class="chapter-mark"><span class="num">5</span> Emergent abilities</div>
+  <h2>In-context learning — <em>examples in the prompt</em></h2>
+  <p><span class="term">In-context learning</span> is the ability to learn new tasks from examples in the prompt — without updating any parameters. Give GPT-3 three English-to-French translation examples, and it translates a fourth sentence correctly despite never being fine-tuned on translation.</p>
+  <p>Three regimes: <strong>zero-shot</strong> (task description only), <strong>few-shot</strong> (2–5 examples + query), and <strong>chain-of-thought</strong> (add "let me think step by step" to elicit intermediate reasoning). CoT dramatically improves math and logic performance — the model uses its own generated text as a working memory scratchpad.</p>
+  <div class="aside"><div class="label">Why this is surprising</div>
+  <p>The model was trained only on next-token prediction. Nobody explicitly taught it to "follow examples in the prompt." The ability emerges at scale — small models can't do it; large models can. Mechanistic interpretability research has identified "induction heads" (attention circuits that copy-and-complete patterns) as one of the underlying mechanisms.</p></div>
+</section>
+
+<!-- ============ 6 ============ -->
+<section id="rlhf">
+  <div class="chapter-mark"><span class="num">6</span> Alignment</div>
+  <h2>RLHF — from prediction <em>to helpfulness</em></h2>
+  <p>A base language model predicts the most likely continuation — but likely text isn't always helpful, truthful, or safe. <span class="term">RLHF</span> bridges this gap in three steps:</p>
+  <figure>
+    <svg viewBox="0 0 720 180" xmlns="http://www.w3.org/2000/svg" style="background:#fff">
+      <text x="360" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Three stages: supervised fine-tuning → reward model → RL optimization</text>
+      <rect x="30" y="50" width="190" height="70" rx="4" fill="#3a5a72"/>
+      <text x="125" y="74" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">① SFT</text>
+      <text x="125" y="92" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">fine-tune on high-quality</text>
+      <text x="125" y="106" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">instruction–response pairs</text>
+      <line x1="220" y1="85" x2="260" y2="85" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="264" y="50" width="190" height="70" rx="4" fill="#b88528"/>
+      <text x="359" y="74" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">② Reward Model</text>
+      <text x="359" y="92" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">train on human preferences</text>
+      <text x="359" y="106" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">response A vs B → score</text>
+      <line x1="454" y1="85" x2="494" y2="85" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="498" y="50" width="190" height="70" rx="4" fill="#7a3a8a"/>
+      <text x="593" y="74" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">③ RL (PPO / DPO)</text>
+      <text x="593" y="92" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">optimize policy against RM</text>
+      <text x="593" y="106" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">+ KL penalty to base</text>
+      <rect x="120" y="142" width="480" height="28" rx="4" fill="#f0e8f4" stroke="#7a3a8a"/>
+      <text x="360" y="160" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">RLHF turns GPT-3 (base model) into ChatGPT (assistant) — same weights, different behavior</text>
+    </svg>
+    <figcaption>The RLHF pipeline. SFT teaches the format; the reward model captures human preferences; RL optimizes the model's behavior against those preferences while staying close to the base model (KL penalty). DPO (Direct Preference Optimization) is a simpler alternative that skips the reward model entirely.<span class="src">Original SVG</span></figcaption>
+  </figure>
+</section>
+
+<!-- ============ 7 ============ -->
+<section id="scaling">
+  <div class="chapter-mark"><span class="num">7</span> Scale</div>
+  <h2>Scaling laws — bigger is <em>predictably better</em></h2>
+  <p>Kaplan et al. (2020) and Hoffmann et al. (2022, "Chinchilla") showed that loss follows clean power laws in parameters $N$ and data $D$:</p>
+  <div class="math-display">$$L(N, D) \approx \left(\frac{N_c}{N}\right)^{\alpha_N} + \left(\frac{D_c}{D}\right)^{\alpha_D} + L_\infty$$</div>
+  <p>If you know performance at one scale, you can <em>predict</em> it at 10× or 100× scale. Chinchilla's key finding: optimal training uses roughly equal compute on parameters and data — most existing models were <strong>undertrained</strong> (too many parameters, not enough data). This shifted the field toward training smaller models on more data (LLaMA, Mistral).</p>
+</section>
+
+<!-- ============ 8 ============ -->
+<section id="kvcache">
+  <div class="chapter-mark"><span class="num">8</span> Efficiency</div>
+  <h2>KV cache and <em>inference tricks</em></h2>
+  <p>Autoregressive generation is inherently sequential — each token requires a forward pass. The <span class="term">KV cache</span> avoids recomputing keys and values for all previous tokens at every step: compute $K_t, V_t$ only for the new token, append to the cache, attend using the full cached $K_{1:t}, V_{1:t}$. This reduces per-step computation from $O(t \cdot d)$ to $O(d)$ for the projection.</p>
+  <p>Other key efficiency techniques:</p>
+  <ul class="fancy">
+    <li><strong>Grouped-Query Attention (GQA):</strong> share K/V heads across multiple Q heads to reduce KV cache size by $G$×. Used in LLaMA-2, Mistral.</li>
+    <li><strong>Speculative decoding:</strong> a small draft model proposes $K$ tokens; the large model verifies them in parallel. Produces the <em>exact same distribution</em> as the large model alone, just 2–3× faster.</li>
+    <li><strong>Quantization:</strong> INT4 weights (GPTQ, AWQ) reduce a 7B model from 14GB to 3.5GB with negligible quality loss.</li>
+    <li><strong>Flash Attention:</strong> IO-aware exact attention that reduces memory from $O(T^2)$ to $O(T)$. Standard everywhere.</li>
+  </ul>
+</section>
+
+<!-- ============ 9 ============ -->
+<section id="fieldnotes">
+  <div class="chapter-mark"><span class="num">9</span> Field notes</div>
+  <h2>Building MiniGPT <em>from scratch</em></h2>
+  <div class="aside"><div class="label">Source</div><p>Experiments from the <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/07-autoregressive/notebook.ipynb">Module 07 notebook</a>. Builds a character-level GPT from scratch and trains it on Shakespeare.</p></div>
+  <h3>Character-level tokenization and BPE</h3>
+  <p>The notebook starts with a character-level tokenizer (vocabulary of ~65 characters), then demonstrates BPE (Byte Pair Encoding) to show how subword tokenization works — iteratively merging the most frequent adjacent pairs. This is the algorithm behind GPT-2's tokenizer (50,257 tokens) and all modern tokenizers.</p>
+  <h3>Training on Shakespeare</h3>
+  <p>A tiny 4-layer, 4-head transformer (~200K parameters) is trained on Shakespeare's complete works. The loss curve shows the characteristic pattern: rapid initial descent (learning character frequencies and common words), then gradual refinement (learning longer-range patterns, dialogue structure). Perplexity drops from ~65 (nearly random among characters) to ~5 (the model has strong predictions most of the time).</p>
+  <h3>Temperature effects</h3>
+  <p>Generated samples at different temperatures are strikingly different: $\tau = 0.5$ produces conservative, repetitive text with common words; $\tau = 1.0$ produces varied, sometimes surprising text; $\tau = 1.5$ produces gibberish. The sweet spot ($\tau \approx 0.8$) captures Shakespeare's vocabulary and rhythm without degenerating.</p>
+  <h3>Attention map analysis</h3>
+  <p>Visualizing the attention maps for a sample prompt reveals head specialization: some heads show a strong diagonal pattern (attending to the previous token — positional), while others show broader, content-dependent patterns (attending to semantically related tokens earlier in the sequence). The average attention distance per head quantifies this: positional heads have low average distance; content heads have high average distance.</p>
+  <h3>KV cache benchmarking</h3>
+  <p>The notebook implements a KV-cached version of MiniGPT and benchmarks it against the naive version. For 400-token generation, the cached version is ~3× faster — and the speedup grows with sequence length because the naive version recomputes all attention at every step.</p>
+</section>
+
+<!-- ============ 10 ============ -->
+<section id="playground">
+  <div class="chapter-mark"><span class="num">10</span> Playground</div>
+  <h2>See how sampling <em>changes the distribution</em></h2>
+  <p>A simulated next-token distribution over 12 "tokens." Adjust temperature, top-k, and top-p to see how the probability bars change in real time. Notice: low temperature concentrates mass on the top token; top-k zeroes out the tail; top-p adaptively adjusts the cutoff based on cumulative probability.</p>
+  <div class="demo" id="sample-demo">
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:14px;font-family:'JetBrains Mono',monospace;font-size:11px">
+      <label style="display:flex;align-items:center;gap:6px;color:var(--ink-2)">τ: <input type="range" id="sd-temp" min="10" max="300" value="100" style="width:100px"><span id="sd-temp-v">1.00</span></label>
+      <label style="display:flex;align-items:center;gap:6px;color:var(--ink-2)">top-k: <input type="range" id="sd-topk" min="0" max="12" value="0" style="width:80px"><span id="sd-topk-v">off</span></label>
+      <label style="display:flex;align-items:center;gap:6px;color:var(--ink-2)">top-p: <input type="range" id="sd-topp" min="0" max="100" value="0" style="width:80px"><span id="sd-topp-v">off</span></label>
+      <button id="sd-resample">↻ New logits</button>
+    </div>
+    <canvas id="sd-canvas" width="600" height="260" style="width:100%;max-width:600px;border:1px solid var(--rule);border-radius:4px;background:#fff;display:block;margin:0 auto"></canvas>
+    <p style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);text-align:center" id="sd-status">adjust sliders to see how temperature, top-k, and top-p reshape the distribution</p>
+  </div>
+</section>
+
+<div class="ornament">⁂ ⁂ ⁂</div>
+
+<!-- ============ 11 ============ -->
+<section id="takeaways">
+  <div class="chapter-mark"><span class="num">11</span> Closing</div>
+  <h2>Takeaways &amp; <em>exercises</em></h2>
+  <ol class="fancy">
+    <li><strong>Autoregressive = chain rule of probability.</strong> The factorization $p(x) = \prod p(x_t | x_{<t})$ is exact.</li>
+    <li><strong>Next-token prediction is the only objective</strong> — but to predict well, the model must learn everything about language.</li>
+    <li><strong>Decoding strategy matters as much as the model.</strong> Temperature, top-k, and top-p dramatically change output quality.</li>
+    <li><strong>In-context learning is an emergent ability</strong> — it appears at sufficient scale and enables few-shot task performance without fine-tuning.</li>
+    <li><strong>RLHF bridges prediction and helpfulness</strong> — same weights, different behavior.</li>
+    <li><strong>Scaling laws make outcomes predictable</strong> — loss follows power laws in parameters, data, and compute.</li>
+    <li><strong>The KV cache is essential</strong> — without it, autoregressive generation is quadratically slow.</li>
+  </ol>
+  <div class="aside check"><div class="label">Exercises</div>
+    <p><strong>1.</strong> Why is autoregressive generation inherently sequential? Why can't you generate all tokens in parallel?</p>
+    <p><strong>2.</strong> In the playground above, set temperature to 0.3 and observe the distribution. Then set it to 2.0. Describe what happens and why.</p>
+    <p><strong>3.</strong> Open the notebook. Generate Shakespeare at temperatures 0.5, 0.8, 1.0, 1.5. Which is most "Shakespeare-like"?</p>
+    <p><strong>4.</strong> Explain in-context learning to a non-technical friend. Why is it surprising that a model trained only on next-token prediction can learn new tasks from examples in the prompt?</p>
+    <p><strong>5.</strong> The KV cache turns $O(T^2)$ generation into $O(T)$. Verify this by running the notebook benchmark. At what sequence length does the speedup become noticeable?</p>
+  </div>
+  <h3>Further reading</h3>
+  <ul class="fancy">
+    <li>Radford et al. (2018/2019) — <em>GPT</em> and <em>GPT-2</em>.</li>
+    <li>Brown et al. (2020) — <em>GPT-3</em>. In-context learning at scale.</li>
+    <li>Ouyang et al. (2022) — <em>InstructGPT / RLHF</em>.</li>
+    <li>Kaplan et al. (2020) — <em>Scaling Laws for Neural Language Models</em>.</li>
+    <li>Hoffmann et al. (2022) — <em>Chinchilla: compute-optimal training</em>.</li>
+    <li>Holtzman et al. (2020) — <em>Nucleus Sampling (top-p)</em>.</li>
+    <li>Leviathan et al. (2023) — <em>Speculative Decoding</em>.</li>
+    <li>P. Kulkarni — <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/07-autoregressive/notebook.ipynb"><em>Module 07 notebook</em></a>.</li>
+  </ul>
+</section>
+
+<footer>
+  <p style="margin-bottom:14px">All figures are original SVGs. Conceptual structure draws on the companion notes and cited papers.</p>
+  <hr style="border:none;border-top:1px solid var(--rule);margin:24px 0">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+    <div><div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7165;margin-bottom:6px">Author</div><div>Prashant Kulkarni<br><span style="color:#7a7165">with help from Claude Opus (Anthropic)</span></div></div>
+    <div><div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7165;margin-bottom:6px">License</div><div><a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a><br><span style="color:#7a7165">Free to share &amp; adapt for non-commercial use, with attribution.</span></div></div>
+  </div>
+  <p style="margin-top:18px;font-size:11px;color:#7a7165">Part of the <em style="font-family:'Fraunces',serif;font-size:13px">learn-generative-ai</em> tutorial series · Chapter 07 of 10 · v1.0</p>
+</footer>
+</main>
+</div>
+
+<script>
+"use strict";
+// Sampling demo: bar chart showing token distribution with temperature/top-k/top-p controls
+const SW=600,SH=260;
+const sc=document.getElementById('sd-canvas');
+const sctx=sc?sc.getContext('2d'):null;
+const TOKENS=['the','cat','sat','on','a','mat','dog','ran','big','red','is','was'];
+let rawLogits=[];
+function genLogits(){rawLogits=[];for(let i=0;i<TOKENS.length;i++)rawLogits.push(3-i*0.5+Math.random()*1.5)}
+function softmax(logits,temp){
+  const scaled=logits.map(l=>l/temp);
+  const mx=Math.max(...scaled);
+  const exps=scaled.map(l=>Math.exp(l-mx));
+  const s=exps.reduce((a,b)=>a+b,0);
+  return exps.map(e=>e/s);
+}
+function applyTopK(probs,k){
+  if(k<=0||k>=probs.length)return probs.slice();
+  const indexed=probs.map((p,i)=>({p,i})).sort((a,b)=>b.p-a.p);
+  const result=new Array(probs.length).fill(0);
+  let sum=0;
+  for(let j=0;j<k;j++){result[indexed[j].i]=indexed[j].p;sum+=indexed[j].p}
+  return result.map(p=>p/sum);
+}
+function applyTopP(probs,p){
+  if(p<=0||p>=1)return probs.slice();
+  const indexed=probs.map((pr,i)=>({p:pr,i})).sort((a,b)=>b.p-a.p);
+  const result=new Array(probs.length).fill(0);
+  let cum=0;
+  for(const item of indexed){result[item.i]=item.p;cum+=item.p;if(cum>=p)break}
+  const sum=result.reduce((a,b)=>a+b,0);
+  return result.map(pr=>pr/sum);
+}
+function drawSampling(){
+  if(!sctx)return;
+  sctx.clearRect(0,0,SW,SH);
+  const temp=parseInt(document.getElementById('sd-temp').value)/100;
+  const topk=parseInt(document.getElementById('sd-topk').value);
+  const topp=parseInt(document.getElementById('sd-topp').value)/100;
+  document.getElementById('sd-temp-v').textContent=temp.toFixed(2);
+  document.getElementById('sd-topk-v').textContent=topk>0?topk:'off';
+  document.getElementById('sd-topp-v').textContent=topp>0?topp.toFixed(2):'off';
+  let probs=softmax(rawLogits,temp);
+  if(topk>0)probs=applyTopK(probs,topk);
+  if(topp>0)probs=applyTopP(probs,topp);
+  const barW=36,gap=12,startX=(SW-TOKENS.length*(barW+gap)+gap)/2;
+  const maxH=180,baseY=210;
+  const maxP=Math.max(...probs,0.01);
+  for(let i=0;i<TOKENS.length;i++){
+    const x=startX+i*(barW+gap);
+    const h=probs[i]/maxP*maxH;
+    const alpha=probs[i]<0.001?0.15:0.8;
+    sctx.fillStyle=probs[i]<0.001?'#d9cfba':`rgba(122,58,138,${alpha})`;
+    sctx.fillRect(x,baseY-h,barW,h);
+    sctx.fillStyle=probs[i]<0.001?'#d9cfba':'#3d3830';
+    sctx.font='10px "JetBrains Mono"';sctx.textAlign='center';
+    sctx.fillText(TOKENS[i],x+barW/2,baseY+14);
+    if(probs[i]>=0.001){
+      sctx.fillStyle='#7a3a8a';sctx.font='bold 10px "JetBrains Mono"';
+      sctx.fillText((probs[i]*100).toFixed(1)+'%',x+barW/2,baseY-h-6);
+    }
+  }
+  sctx.strokeStyle='#d9cfba';sctx.lineWidth=1;
+  sctx.beginPath();sctx.moveTo(startX-10,baseY);sctx.lineTo(startX+TOKENS.length*(barW+gap),baseY);sctx.stroke();
+  // Status
+  const active=probs.filter(p=>p>=0.001).length;
+  const entropy=-probs.reduce((s,p)=>s+(p>0?p*Math.log2(p):0),0);
+  document.getElementById('sd-status').textContent=
+    `${active} active tokens · entropy = ${entropy.toFixed(2)} bits · τ=${temp.toFixed(2)}`;
+}
+if(sc){
+  genLogits();drawSampling();
+  ['sd-temp','sd-topk','sd-topp'].forEach(id=>document.getElementById(id).addEventListener('input',drawSampling));
+  document.getElementById('sd-resample').addEventListener('click',()=>{genLogits();drawSampling()});
+}
+// TOC
+const sections=document.querySelectorAll('section[id]');const tocLinks=document.querySelectorAll('.toc a');
+const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){tocLinks.forEach(l=>l.style.color='');const a=document.querySelector(`.toc a[href="#${e.target.id}"]`);if(a)a.style.color='var(--accent)'}})},{rootMargin:'-30% 0px -60% 0px'});
+sections.forEach(s=>observer.observe(s));
+</script>
+</body>
+</html>

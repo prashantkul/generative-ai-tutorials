@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autoencoders — A Tutorial from First Principles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+<style>
+:root{
+  --paper:#f4ede0;--paper-2:#ebe3d4;--card:#fbf7ef;
+  --ink:#1a1814;--ink-2:#3d3830;--ink-3:#7a7165;--rule:#d9cfba;
+  --accent:#506348;--accent-soft:#a4b196;
+  --rust:#b03d1a;--gold:#b88528;--indigo:#3a5a72;--plum:#8a3a5e;
+  --highlight:#fde8b4;
+  --shadow:0 1px 0 rgba(26,24,20,.04),0 8px 30px -10px rgba(26,24,20,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{background:var(--paper);color:var(--ink);font-family:'Newsreader',Georgia,serif;font-size:19px;line-height:1.65;font-weight:380;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;background-image:radial-gradient(circle at 40% 20%,rgba(80,99,72,.06),transparent 40%),radial-gradient(circle at 60% 80%,rgba(184,133,40,.04),transparent 50%);background-attachment:fixed}
+.shell{max-width:1240px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:240px minmax(0,1fr);gap:64px}
+@media(max-width:980px){.shell{grid-template-columns:1fr;gap:0;padding:0 22px}.toc{display:none}}
+.toc{position:sticky;top:32px;align-self:start;padding:80px 0 0;font-family:'Fraunces',serif;font-size:13px;letter-spacing:.02em;height:calc(100vh - 32px);overflow-y:auto}
+.toc h4{font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:13px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.18em;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc}.toc li{counter-increment:toc;margin:6px 0;padding-left:28px;position:relative}
+.toc li::before{content:counter(toc,decimal-leading-zero);position:absolute;left:0;top:1px;font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace}
+.toc a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid transparent;transition:border .2s,color .2s}
+.toc a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+main{max-width:740px;padding:60px 0 120px}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:24px;display:flex;align-items:center;gap:14px}.eyebrow::after{content:"";flex:1;height:1px;background:var(--rule)}
+h1.title{font-family:'Fraunces',serif;font-weight:300;font-size:clamp(48px,7vw,84px);line-height:.95;letter-spacing:-.02em;margin-bottom:18px}
+h1.title em{font-style:italic;font-weight:400;color:var(--accent)}
+.subtitle{font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:24px;color:var(--ink-2);line-height:1.4;max-width:560px;margin-bottom:36px}
+.byline{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);padding-top:24px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:80px}
+.byline a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+section{margin:80px 0;scroll-margin-top:24px}
+.chapter-mark{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+.chapter-mark .num{display:inline-flex;width:32px;height:32px;background:var(--ink);color:var(--paper);border-radius:50%;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+h2{font-family:'Fraunces',serif;font-weight:400;font-size:42px;line-height:1.1;letter-spacing:-.015em;margin:14px 0 28px}
+h2 em{font-style:italic;color:var(--accent);font-weight:300}
+h3{font-family:'Fraunces',serif;font-weight:500;font-style:italic;font-size:24px;margin:40px 0 14px}
+p{margin:0 0 18px;hyphens:auto}
+.lede{font-size:22px;line-height:1.55;color:var(--ink-2);font-family:'Fraunces',serif;font-weight:300}
+.lede:first-letter{font-family:'Fraunces',serif;font-weight:600;font-size:78px;float:left;line-height:.85;margin:6px 10px 0 -2px;color:var(--accent)}
+strong{font-weight:600}.term{font-family:'Fraunces',serif;font-style:italic;font-weight:500;color:var(--accent);border-bottom:1px dotted var(--accent-soft)}
+code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--paper-2);padding:1px 6px;border-radius:3px}
+.pullquote{border-left:3px solid var(--accent);padding:8px 0 8px 24px;margin:32px 0;font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:24px;line-height:1.4;color:var(--ink-2)}
+.aside{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:24px 28px;margin:32px 0;box-shadow:var(--shadow)}
+.aside .label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.2em;margin-bottom:8px}
+.aside.insight{background:linear-gradient(180deg,#eef3ea,#fbf6ec);border-color:var(--accent)}.aside.insight .label{color:var(--accent)}
+.aside.check{background:#eef0e8;border-color:#bcc4ad}.aside.check .label{color:var(--accent)}
+.aside p:last-child{margin-bottom:0}
+figure{margin:40px -40px;background:var(--card);border:1px solid var(--rule);border-radius:8px;overflow:hidden;box-shadow:var(--shadow)}
+@media(max-width:980px){figure{margin:32px 0}}
+figure svg{display:block;width:100%}
+figcaption{padding:14px 24px 18px;font-family:'Fraunces',serif;font-style:italic;font-size:15px;line-height:1.45;color:var(--ink-2);border-top:1px solid var(--rule)}
+figcaption .src{display:block;font-family:'JetBrains Mono',monospace;font-style:normal;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+.math-display{margin:24px 0;padding:18px 24px;background:var(--card);border-left:3px solid var(--accent);border-radius:0 4px 4px 0;font-size:.95em;overflow-x:auto}
+ul.fancy,ol.fancy{margin:18px 0 24px;padding-left:0;list-style:none}
+ul.fancy li,ol.fancy li{position:relative;padding-left:32px;margin-bottom:12px}
+ul.fancy li::before{content:"§";position:absolute;left:0;color:var(--accent);font-family:'Fraunces',serif;font-style:italic;font-size:1.1em}
+ol.fancy{counter-reset:fancy}ol.fancy li{counter-increment:fancy}
+ol.fancy li::before{content:counter(fancy,decimal-leading-zero);position:absolute;left:0;top:3px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:32px 0}
+@media(max-width:680px){.compare{grid-template-columns:1fr}}
+.compare>div{background:var(--card);padding:22px;border-radius:6px;border-top:3px solid var(--rule)}
+.compare h4{font-family:'Fraunces',serif;font-weight:500;font-style:italic;font-size:20px;margin-bottom:10px}
+.demo{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:24px;margin:32px 0;box-shadow:var(--shadow)}
+.demo button{background:var(--ink);color:var(--paper);border:none;padding:8px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;border-radius:3px;cursor:pointer;transition:background .2s}
+.demo button:hover{background:var(--accent)}
+.ornament{text-align:center;font-family:'Fraunces',serif;font-style:italic;font-size:32px;color:var(--accent);margin:60px 0 40px;opacity:.5;letter-spacing:.5em}
+footer{margin-top:120px;padding-top:40px;border-top:1px solid var(--rule);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);line-height:1.7}
+footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+</style>
+</head>
+<body>
+<a href="index.html" class="home-link" aria-label="Back to landing page">← Home</a>
+<style>
+.home-link{position:fixed;top:18px;left:22px;z-index:100;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--rust,#b03d1a);background:var(--card,#fbf6ec);border:1px solid var(--rule,#d9cfba);border-radius:14px;padding:6px 12px;text-decoration:none;box-shadow:0 2px 10px -4px rgba(26,24,20,.15);transition:background .15s,color .15s,border-color .15s}
+.home-link:hover{background:var(--rust,#b03d1a);color:#fff;border-color:var(--rust,#b03d1a)}
+</style>
+<div class="shell">
+<nav class="toc"><h4>Tutorial</h4>
+<ol>
+  <li><a href="#idea">The core idea</a></li>
+  <li><a href="#vanilla">Vanilla autoencoders</a></li>
+  <li><a href="#vae">Variational autoencoders</a></li>
+  <li><a href="#elbo">The ELBO</a></li>
+  <li><a href="#reparam">The reparameterization trick</a></li>
+  <li><a href="#latent">Latent space properties</a></li>
+  <li><a href="#vqvae">VQ-VAE: discrete codes</a></li>
+  <li><a href="#apps">Applications in generative AI</a></li>
+  <li><a href="#fieldnotes">Field notes: AE vs VAE vs VQ-VAE</a></li>
+  <li><a href="#playground">Interactive: latent space explorer</a></li>
+  <li><a href="#takeaways">Takeaways &amp; exercises</a></li>
+</ol>
+</nav>
+
+<main>
+<header>
+  <div class="eyebrow">A First-Principles Tutorial · Chapter 03</div>
+  <h1 class="title">Auto<em>encoders</em></h1>
+  <p class="subtitle">Compress, reconstruct, generate — how bottleneck networks learn the hidden structure of data.</p>
+  <div class="byline"><span>By Prashant Kulkarni · with help from Claude Opus</span><span><a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a></span></div>
+</header>
+
+<!-- ============ 1. IDEA ============ -->
+<section id="idea">
+  <div class="chapter-mark"><span class="num">1</span> The core idea</div>
+  <h2>Copy your input — through a <em>bottleneck</em></h2>
+
+  <p class="lede">An autoencoder is a neural network trained to copy its input to its output — but forced to do so through a narrow bottleneck. The bottleneck prevents the identity function and instead forces the network to discover compact, meaningful structure in the data.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7a7165"/></marker></defs>
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">The autoencoder pipeline: compress, then reconstruct</text>
+      <!-- Input -->
+      <rect x="40" y="60" width="100" height="100" rx="4" fill="#3a5a72"/>
+      <text x="90" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">input x</text>
+      <text x="90" y="122" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">D = 784</text>
+      <text x="90" y="136" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">(28×28)</text>
+      <!-- Arrow -->
+      <line x1="140" y1="110" x2="180" y2="110" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- Encoder -->
+      <rect x="184" y="70" width="120" height="80" rx="4" fill="#506348"/>
+      <text x="244" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">Encoder f_θ</text>
+      <text x="244" y="122" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">784 → 256 → d</text>
+      <!-- Arrow -->
+      <line x1="304" y1="110" x2="334" y2="110" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- Bottleneck -->
+      <rect x="338" y="86" width="64" height="48" rx="4" fill="#b03d1a"/>
+      <text x="370" y="106" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">z</text>
+      <text x="370" y="122" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">d = 2</text>
+      <!-- Arrow -->
+      <line x1="402" y1="110" x2="432" y2="110" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- Decoder -->
+      <rect x="436" y="70" width="120" height="80" rx="4" fill="#506348"/>
+      <text x="496" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">Decoder g_φ</text>
+      <text x="496" y="122" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">d → 256 → 784</text>
+      <!-- Arrow -->
+      <line x1="556" y1="110" x2="586" y2="110" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- Output -->
+      <rect x="590" y="60" width="100" height="100" rx="4" fill="#3a5a72" opacity="0.6"/>
+      <text x="640" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">x̂ ≈ x</text>
+      <text x="640" y="122" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">D = 784</text>
+      <!-- Loss -->
+      <line x1="640" y1="160" x2="640" y2="190" stroke="#b03d1a" stroke-width="1.5"/>
+      <line x1="640" y1="190" x2="90" y2="190" stroke="#b03d1a" stroke-width="1" stroke-dasharray="5,3"/>
+      <line x1="90" y1="160" x2="90" y2="190" stroke="#b03d1a" stroke-width="1.5"/>
+      <text x="365" y="206" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#b03d1a" font-weight="600">loss = ‖x − x̂‖²</text>
+      <!-- Labels -->
+      <text x="244" y="56" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.1em">COMPRESS</text>
+      <text x="370" y="76" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a" letter-spacing="0.1em">BOTTLENECK</text>
+      <text x="496" y="56" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.1em">RECONSTRUCT</text>
+    </svg>
+    <figcaption>
+      The autoencoder pipeline. A 784-dimensional MNIST image is compressed through the encoder to a $d$-dimensional latent code $z$ (the bottleneck), then reconstructed by the decoder. The loss is simply the squared distance between input and reconstruction. When $d \ll D$, the network must learn to keep only the information that matters.
+      <span class="src">Original SVG</span>
+    </figcaption>
+  </figure>
+
+  <p>The bottleneck dimension $d$ controls how aggressively the network compresses. With $d = 2$ on MNIST, the network must squeeze a 784-pixel image into just two numbers — forcing it to discover that digits lie on a low-dimensional manifold. These two numbers encode the "type" and "style" of the digit in a continuous, learned coordinate system.</p>
+</section>
+
+<!-- ============ 2. VANILLA ============ -->
+<section id="vanilla">
+  <div class="chapter-mark"><span class="num">2</span> Vanilla autoencoders</div>
+  <h2>Compression without <em>generation</em></h2>
+
+  <p>A vanilla AE minimizes reconstruction loss: $\mathcal{L} = \frac{1}{N}\sum_i \|x_i - g_\phi(f_\theta(x_i))\|^2$. After training, the encoder produces a compact representation, and the decoder can reconstruct from it. This gives you dimensionality reduction (like PCA but nonlinear) and learned features.</p>
+
+  <p>But there's a problem: <strong>you can't generate new data</strong>. The latent space of a vanilla AE has no structure — there are gaps, discontinuities, and dead regions. If you sample a random point $z$ from the latent space, the decoder will likely produce garbage. The encoder only learned to map training inputs to latent points; the space between those points is undefined.</p>
+
+  <div class="pullquote">"A vanilla autoencoder learns to compress — but only the data it has seen. The space between encoded points is a no-man's-land."</div>
+</section>
+
+<!-- ============ 3. VAE ============ -->
+<section id="vae">
+  <div class="chapter-mark"><span class="num">3</span> The VAE</div>
+  <h2>From compression <em>to generation</em></h2>
+
+  <p>The <span class="term">Variational Autoencoder</span> (Kingma &amp; Welling, 2013) makes one decisive change: instead of encoding each input to a single point, the encoder outputs the <strong>parameters of a probability distribution</strong> — a mean $\mu$ and a variance $\sigma^2$ — from which the latent code is sampled.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">VAE: encode to a distribution, sample, decode</text>
+      <!-- Input -->
+      <rect x="30" y="100" width="80" height="60" rx="4" fill="#3a5a72"/>
+      <text x="70" y="128" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">x</text>
+      <text x="70" y="144" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">input</text>
+      <!-- Arrow -->
+      <line x1="110" y1="130" x2="140" y2="130" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- Encoder -->
+      <rect x="144" y="100" width="100" height="60" rx="4" fill="#506348"/>
+      <text x="194" y="128" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">Encoder</text>
+      <text x="194" y="144" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">f_θ(x)</text>
+      <!-- Arrows to mu and sigma -->
+      <line x1="244" y1="116" x2="290" y2="90" stroke="#7a7165" stroke-width="1.5"/>
+      <line x1="290" y1="90" x2="310" y2="90" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <line x1="244" y1="144" x2="290" y2="170" stroke="#7a7165" stroke-width="1.5"/>
+      <line x1="290" y1="170" x2="310" y2="170" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- mu -->
+      <rect x="314" y="72" width="60" height="36" rx="4" fill="#8a3a5e"/>
+      <text x="344" y="94" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">μ</text>
+      <!-- sigma -->
+      <rect x="314" y="152" width="60" height="36" rx="4" fill="#8a3a5e"/>
+      <text x="344" y="174" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">log σ²</text>
+      <!-- Both go to reparameterization -->
+      <line x1="374" y1="90" x2="420" y2="90" stroke="#8a3a5e" stroke-width="1.5"/>
+      <line x1="420" y1="90" x2="420" y2="118" stroke="#8a3a5e" stroke-width="1.5"/>
+      <line x1="374" y1="170" x2="420" y2="170" stroke="#8a3a5e" stroke-width="1.5"/>
+      <line x1="420" y1="170" x2="420" y2="142" stroke="#8a3a5e" stroke-width="1.5"/>
+      <!-- Epsilon -->
+      <rect x="400" y="206" width="70" height="30" rx="4" fill="#ebe3d4" stroke="#7a7165"/>
+      <text x="435" y="225" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#3d3830" font-weight="600">ε ~ N(0,I)</text>
+      <line x1="435" y1="206" x2="435" y2="142" stroke="#7a7165" stroke-width="1" stroke-dasharray="3,2"/>
+      <!-- Reparameterization box -->
+      <rect x="398" y="118" width="74" height="24" rx="4" fill="#b03d1a"/>
+      <text x="435" y="134" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">z = μ+σ·ε</text>
+      <!-- Arrow to decoder -->
+      <line x1="472" y1="130" x2="510" y2="130" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- Decoder -->
+      <rect x="514" y="100" width="100" height="60" rx="4" fill="#506348"/>
+      <text x="564" y="128" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">Decoder</text>
+      <text x="564" y="144" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">g_φ(z)</text>
+      <!-- Arrow to output -->
+      <line x1="614" y1="130" x2="644" y2="130" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- Output -->
+      <rect x="648" y="100" width="56" height="60" rx="4" fill="#3a5a72" opacity="0.6"/>
+      <text x="676" y="134" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">x̂</text>
+      <!-- Labels -->
+      <rect x="296" y="40" width="190" height="24" rx="4" fill="#f8e8f0" stroke="#8a3a5e"/>
+      <text x="391" y="56" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#8a3a5e" font-weight="600">reparameterization trick</text>
+    </svg>
+    <figcaption>
+      The VAE architecture. The encoder outputs parameters ($\mu$, $\log\sigma^2$) of a Gaussian, not a single point. The reparameterization trick — $z = \mu + \sigma \odot \epsilon$ with $\epsilon \sim \mathcal{N}(0,I)$ — makes the sampling step differentiable, allowing gradients to flow back to the encoder.
+      <span class="src">Original SVG · concept after Kingma &amp; Welling (2013)</span>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ============ 4. ELBO ============ -->
+<section id="elbo">
+  <div class="chapter-mark"><span class="num">4</span> The objective</div>
+  <h2>The ELBO — <em>two forces in tension</em></h2>
+
+  <p>The VAE maximizes the <span class="term">Evidence Lower Bound</span>:</p>
+
+  <div class="math-display">$$\text{ELBO} = \underbrace{\mathbb{E}_{q_\theta(z|x)}[\log p_\phi(x|z)]}_{\text{reconstruction: "make good outputs"}} \;-\; \underbrace{D_\text{KL}(q_\theta(z|x) \| p(z))}_{\text{regularization: "stay close to prior"}}$$</div>
+
+  <p>Two forces pulling in opposite directions:</p>
+
+  <ul class="fancy">
+    <li><strong>Reconstruction term:</strong> pushes the model to encode enough information in $z$ to reconstruct $x$ accurately. Wants large $\sigma$ and high-information $\mu$ — the same pressure as a vanilla AE.</li>
+    <li><strong>KL term:</strong> pulls every encoder posterior toward the standard normal prior $\mathcal{N}(0, I)$. Wants small $\mu$ (close to origin) and $\sigma \approx 1$ (not too peaked). This is the regularizer that gives the latent space its structure.</li>
+  </ul>
+
+  <p>When both posteriors and priors are Gaussian, the KL has a closed form:</p>
+
+  <div class="math-display">$$D_\text{KL} = -\frac{1}{2}\sum_{j=1}^{d}\left(1 + \log\sigma_j^2 - \mu_j^2 - \sigma_j^2\right)$$</div>
+
+  <div class="aside insight">
+    <div class="label">Why KL regularization enables generation</div>
+    <p>Without KL, each input maps to an isolated point in latent space — the decoder memorizes those points, and the space between them is meaningless. The KL term forces encoded distributions to <strong>overlap</strong> near the origin, filling the gaps. Now you can sample $z \sim \mathcal{N}(0, I)$, decode it, and get a plausible output — because the decoder has seen training data everywhere near the origin.</p>
+  </div>
+</section>
+
+<!-- ============ 5. REPARAM ============ -->
+<section id="reparam">
+  <div class="chapter-mark"><span class="num">5</span> The trick</div>
+  <h2>Reparameterization — making <em>sampling differentiable</em></h2>
+
+  <p>The ELBO requires sampling $z \sim q_\theta(z|x)$, but sampling is not differentiable — gradients can't flow through a random node. The fix is elegant: instead of sampling from a $\theta$-dependent distribution, sample noise from a <em>fixed</em> distribution and transform it deterministically:</p>
+
+  <div class="math-display">$$\epsilon \sim \mathcal{N}(0, I), \qquad z = \mu_\theta + \sigma_\theta \odot \epsilon$$</div>
+
+  <p>Now $z$ is a differentiable function of $\mu$ and $\sigma$ (given fixed $\epsilon$). Gradients flow through to the encoder. The randomness comes from $\epsilon$, which doesn't depend on any learned parameters.</p>
+
+  <p>In code, the encoder outputs $\mu$ and $\log\sigma^2$ (log-variance for numerical stability). The sampling step is one line: <code>z = mu + torch.exp(0.5 * logvar) * eps</code>.</p>
+</section>
+
+<!-- ============ 6. LATENT ============ -->
+<section id="latent">
+  <div class="chapter-mark"><span class="num">6</span> Latent space</div>
+  <h2>What makes a VAE latent space <em>special</em></h2>
+
+  <p>The KL regularizer gives VAE latent spaces three properties that vanilla AEs lack:</p>
+
+  <ul class="fancy">
+    <li><strong>Smoothness.</strong> Nearby points in latent space decode to similar outputs. There are no sharp discontinuities — the space is a continuous manifold.</li>
+    <li><strong>Completeness.</strong> Every point in the "inhabited" region of latent space decodes to something meaningful. No dead zones.</li>
+    <li><strong>Interpolation.</strong> Walking in a straight line between two encoded points produces a smooth morph between their corresponding outputs — a "3" gradually becomes an "8" through plausible intermediate forms.</li>
+  </ul>
+
+  <div class="compare">
+    <div style="border-top-color:#b03d1a">
+      <h4 style="color:#b03d1a">Vanilla AE latent space</h4>
+      <p style="font-size:15px">Clusters are tight and separated. Gaps between clusters decode to garbage. No principled way to sample new points. Good for compression, bad for generation.</p>
+    </div>
+    <div style="border-top-color:#506348">
+      <h4 style="color:#506348">VAE latent space</h4>
+      <p style="font-size:15px">Clusters overlap and fill the space. Any point near the origin decodes to something plausible. Interpolation is smooth. Generation works by sampling $z \sim \mathcal{N}(0,I)$ and decoding.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. VQ-VAE ============ -->
+<section id="vqvae">
+  <div class="chapter-mark"><span class="num">7</span> VQ-VAE</div>
+  <h2>Discrete codes and <em>codebooks</em></h2>
+
+  <p>The <span class="term">Vector Quantized VAE</span> (van den Oord et al., 2017) takes a different path: instead of a continuous Gaussian latent space, it uses a <strong>discrete codebook</strong> of $K$ learned embedding vectors $\{e_1, \ldots, e_K\}$.</p>
+
+  <p>The encoder produces a continuous vector $z_e$, which is then replaced by its nearest codebook entry:</p>
+
+  <div class="math-display">$$z_q = e_k \quad\text{where}\quad k = \arg\min_j \|z_e - e_j\|_2$$</div>
+
+  <p>The result: the latent representation is a grid of <em>discrete indices</em> into the codebook — exactly the format that autoregressive models (GPT, PixelCNN) can model. This is the bridge between vision and language: images become sequences of codebook tokens.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">VQ-VAE: encode → quantize to codebook → decode</text>
+      <!-- Input -->
+      <rect x="30" y="80" width="70" height="60" rx="4" fill="#3a5a72"/>
+      <text x="65" y="114" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">x</text>
+      <line x1="100" y1="110" x2="130" y2="110" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- Encoder -->
+      <rect x="134" y="80" width="80" height="60" rx="4" fill="#506348"/>
+      <text x="174" y="106" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">Encoder</text>
+      <text x="174" y="122" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">→ z_e</text>
+      <line x1="214" y1="110" x2="244" y2="110" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- z_e continuous -->
+      <rect x="248" y="86" width="60" height="48" rx="4" fill="#b88528"/>
+      <text x="278" y="108" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">z_e</text>
+      <text x="278" y="122" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity="0.8">continuous</text>
+      <!-- Arrow to quantize -->
+      <line x1="308" y1="110" x2="338" y2="110" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- Quantize -->
+      <rect x="342" y="76" width="100" height="68" rx="4" fill="#b03d1a"/>
+      <text x="392" y="98" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">Nearest</text>
+      <text x="392" y="112" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">Neighbor</text>
+      <text x="392" y="128" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity="0.8">argmin ‖z_e−e_k‖</text>
+      <!-- Codebook -->
+      <rect x="342" y="168" width="100" height="50" rx="4" fill="#fff" stroke="#b03d1a" stroke-width="1.5"/>
+      <text x="392" y="188" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a" font-weight="600">Codebook</text>
+      <text x="392" y="204" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#7a7165">{e₁, e₂, ..., e_K}</text>
+      <line x1="392" y1="168" x2="392" y2="144" stroke="#b03d1a" stroke-width="1" stroke-dasharray="3,2"/>
+      <!-- Arrow to z_q -->
+      <line x1="442" y1="110" x2="472" y2="110" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- z_q discrete -->
+      <rect x="476" y="86" width="60" height="48" rx="4" fill="#8a3a5e"/>
+      <text x="506" y="108" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">z_q</text>
+      <text x="506" y="122" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity="0.8">discrete</text>
+      <!-- Arrow to decoder -->
+      <line x1="536" y1="110" x2="566" y2="110" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- Decoder -->
+      <rect x="570" y="80" width="80" height="60" rx="4" fill="#506348"/>
+      <text x="610" y="106" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">Decoder</text>
+      <text x="610" y="122" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">→ x̂</text>
+      <!-- Arrow to output -->
+      <line x1="650" y1="110" x2="670" y2="110" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="674" y="86" width="36" height="48" rx="4" fill="#3a5a72" opacity="0.6"/>
+      <text x="692" y="114" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">x̂</text>
+    </svg>
+    <figcaption>
+      VQ-VAE replaces the continuous Gaussian with a discrete nearest-neighbor lookup into a learned codebook. The encoder produces continuous $z_e$; quantization snaps it to the nearest codebook vector $e_k$; the decoder reconstructs from the quantized code $z_q$. The straight-through estimator copies gradients from $z_q$ directly back to $z_e$ during backpropagation.
+      <span class="src">Original SVG · concept after van den Oord et al. (2017)</span>
+    </figcaption>
+  </figure>
+
+  <p>The VQ-VAE loss has three terms: reconstruction loss (same as vanilla AE), a <strong>codebook loss</strong> that moves codebook entries toward encoder outputs, and a <strong>commitment loss</strong> that moves encoder outputs toward codebook entries. The $\arg\min$ is non-differentiable; the <span class="term">straight-through estimator</span> copies gradients directly from decoder input to encoder output, bypassing quantization.</p>
+
+  <div class="aside">
+    <div class="label">Why VQ-VAE matters for modern generative AI</div>
+    <p>Stable Diffusion's latent space uses a VAE (continuous). DALL-E 1 used a dVAE (discrete, VQ-VAE variant). Modern audio codecs (EnCodec, SoundStream) use residual VQ-VAE to tokenize audio for language-model-style generation. The VQGAN combines VQ-VAE with adversarial training for higher-quality codebook learning. Everywhere you see "tokenize continuous data for a transformer," a VQ-VAE variant is doing the work.</p>
+  </div>
+</section>
+
+<!-- ============ 8. APPLICATIONS ============ -->
+<section id="apps">
+  <div class="chapter-mark"><span class="num">8</span> Applications</div>
+  <h2>Where autoencoders appear <em>in generative AI</em></h2>
+
+  <ul class="fancy">
+    <li><strong>Stable Diffusion's VAE.</strong> A convolutional VAE compresses 512×512×3 images to 64×64×4 latents (48× reduction). The diffusion process runs entirely in this latent space. The VAE is trained first, then frozen; the diffusion model only sees latents.</li>
+    <li><strong>DALL-E 1's dVAE.</strong> A discrete VAE (VQ-VAE variant with Gumbel-softmax relaxation) tokenizes images into a grid of 32×32 discrete codes from a vocabulary of 8192. A transformer then models the joint distribution of text tokens and image tokens autoregressively.</li>
+    <li><strong>Audio tokenization.</strong> EnCodec and SoundStream use residual VQ-VAE to compress audio waveforms into sequences of discrete tokens at various bitrates. These tokens are then modeled by language-model-style transformers (MusicGen, AudioLM) for generation.</li>
+    <li><strong>Representation learning.</strong> Even when not generating, autoencoders provide pretrained features. The encoder's latent space captures semantically meaningful structure that downstream tasks can exploit.</li>
+  </ul>
+</section>
+
+<!-- ============ 9. FIELD NOTES ============ -->
+<section id="fieldnotes">
+  <div class="chapter-mark"><span class="num">9</span> Field notes</div>
+  <h2>AE vs VAE vs VQ-VAE <em>on MNIST</em></h2>
+
+  <div class="aside">
+    <div class="label">Source</div>
+    <p>Experiments from the <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/03-autoencoders/notebook.ipynb">Module 03 notebook</a> in the <code>learn-generative-ai</code> repo. All three models trained on MNIST with a 2D latent space (for AE and VAE) or 64-entry codebook (for VQ-VAE).</p>
+  </div>
+
+  <h3>Reconstruction quality</h3>
+  <p>All three models reconstruct recognizable digits, but with different tradeoffs. The vanilla AE produces the sharpest reconstructions — it puts all capacity into exact copying. The VAE produces slightly blurrier outputs because the KL term forces it to "waste" some capacity on regularizing the latent space. The VQ-VAE is sharp again — no KL smoothing — but occasionally shows quantization artifacts when the encoder output falls between codebook entries.</p>
+
+  <h3>Latent space structure</h3>
+  <p>The 2D latent space scatter plots (colored by digit class) reveal the key difference between AE and VAE. The vanilla AE produces tight, well-separated clusters with large gaps between them — great for classification, terrible for generation. The VAE produces overlapping, smoothly-distributed clusters centered near the origin — exactly what the KL loss enforces. Walking between the "3" region and the "8" region produces plausible intermediate forms.</p>
+
+  <h3>Grid sampling from the VAE</h3>
+  <p>Sampling a uniform grid of $z$ values from $[-3, 3]^2$ and decoding each point produces a beautiful visualization: digits smoothly morph across the grid, transitioning from one class to another through recognizable intermediate forms. This is the payoff of the KL regularization — the entire latent space is "covered" and every point produces something meaningful.</p>
+
+  <h3>Interpolation</h3>
+  <p>Encoding two different digits (e.g., a "3" and an "8"), linearly interpolating between their latent codes, and decoding the intermediate points shows a smooth morphing sequence. The VAE interpolation is smoother and more plausible than the vanilla AE interpolation, which can pass through distorted, unrealistic forms in the gaps between clusters.</p>
+
+  <h3>Codebook utilization (VQ-VAE)</h3>
+  <p>The notebook also checks how many of the 64 codebook entries are actually used. A well-trained VQ-VAE uses most of its codebook; a collapsed one concentrates on a handful of entries (dead codes). The trained model uses 50+ of 64 entries, with the distribution roughly following a Zipf-like pattern — some codes are more popular than others, but few are completely dead.</p>
+</section>
+
+<!-- ============ 10. PLAYGROUND ============ -->
+<section id="playground">
+  <div class="chapter-mark"><span class="num">10</span> Playground</div>
+  <h2>Explore a 2D <em>latent space</em></h2>
+
+  <p>Below is a simulated 2D latent space with 10 "digit classes" arranged in a ring. Click anywhere to see what the decoder would produce at that point — represented as a colored shape that smoothly morphs between classes. Drag to draw an interpolation path and watch the smooth transition. Toggle between "AE mode" (sharp clusters, dead gaps) and "VAE mode" (smooth, continuous coverage).</p>
+
+  <div class="demo" id="ls-demo">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px;font-family:'JetBrains Mono',monospace;font-size:11px">
+      <button id="ls-vae" style="background:#506348">VAE mode</button>
+      <button id="ls-ae">AE mode</button>
+      <button id="ls-clear">clear path</button>
+      <span style="color:var(--ink-3)">click to sample · drag to interpolate</span>
+    </div>
+    <canvas id="ls-canvas" width="600" height="400" style="width:100%;max-width:600px;border:1px solid var(--rule);border-radius:4px;background:#fff;display:block;margin:0 auto;cursor:crosshair"></canvas>
+    <p style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);text-align:center" id="ls-status">VAE mode · smooth transitions, full coverage</p>
+  </div>
+</section>
+
+<div class="ornament">⁂ ⁂ ⁂</div>
+
+<!-- ============ 11. TAKEAWAYS ============ -->
+<section id="takeaways">
+  <div class="chapter-mark"><span class="num">11</span> Closing</div>
+  <h2>Takeaways &amp; <em>exercises</em></h2>
+
+  <h3>The six things to remember</h3>
+  <ol class="fancy">
+    <li><strong>An autoencoder learns to compress by reconstructing.</strong> The bottleneck forces it to keep only the information that matters.</li>
+    <li><strong>Vanilla AEs can't generate</strong> because the latent space has gaps and dead zones. The decoder only knows the points it was trained on.</li>
+    <li><strong>The VAE adds a KL regularizer</strong> that pulls every encoded distribution toward the prior $\mathcal{N}(0,I)$, filling the gaps and enabling generation by sampling.</li>
+    <li><strong>The reparameterization trick</strong> ($z = \mu + \sigma \odot \epsilon$) makes sampling differentiable by moving randomness to a fixed external source.</li>
+    <li><strong>VQ-VAE uses a discrete codebook</strong> instead of a continuous Gaussian, bridging vision and language by turning images into sequences of tokens that transformers can model.</li>
+    <li><strong>Autoencoders are everywhere in modern generative AI:</strong> Stable Diffusion's latent space (VAE), DALL-E's image tokenizer (dVAE), audio codecs (VQ-VAE), and representation learning in general.</li>
+  </ol>
+
+  <div class="aside check">
+    <div class="label">Exercises</div>
+    <p><strong>1.</strong> Why does the VAE produce blurrier outputs than the vanilla AE? Which term in the ELBO is responsible, and what would happen if you set its weight to zero?</p>
+    <p><strong>2.</strong> Derive the closed-form KL divergence between $\mathcal{N}(\mu, \sigma^2)$ and $\mathcal{N}(0, 1)$ for the scalar case ($d=1$). Verify that it is zero when $\mu=0, \sigma=1$ and positive otherwise.</p>
+    <p><strong>3.</strong> In VQ-VAE, the $\arg\min$ is non-differentiable. Explain the straight-through estimator in your own words. What approximation does it make, and why is it acceptable?</p>
+    <p><strong>4.</strong> Open the notebook. Train the VAE with $\beta = 0.1$ (weak KL) and $\beta = 10$ (strong KL). How does the latent space scatter plot change? How does reconstruction quality change?</p>
+    <p><strong>5.</strong> In the playground above, toggle between AE and VAE mode. Click in a gap between clusters in AE mode — what happens? Now do the same in VAE mode. Why is the difference important for generation?</p>
+  </div>
+
+  <h3>Further reading</h3>
+  <ul class="fancy">
+    <li>Kingma &amp; Welling (2013) — <em>Auto-Encoding Variational Bayes</em>. The VAE paper.</li>
+    <li>van den Oord et al. (2017) — <em>Neural Discrete Representation Learning</em>. VQ-VAE.</li>
+    <li>Higgins et al. (2017) — <em>beta-VAE</em>. Disentangled representations.</li>
+    <li>Razavi et al. (2019) — <em>VQ-VAE-2</em>. Hierarchical discrete codes.</li>
+    <li>Esser et al. (2021) — <em>VQGAN</em>. VQ-VAE + adversarial training.</li>
+    <li>Rombach et al. (2022) — <em>Latent Diffusion Models</em>. The VAE that powers Stable Diffusion.</li>
+    <li>P. Kulkarni — <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/03-autoencoders/notebook.ipynb"><em>Module 03 notebook</em></a>. AE, VAE, VQ-VAE from scratch on MNIST.</li>
+  </ul>
+</section>
+
+<footer>
+  <p style="margin-bottom:14px">All figures in this tutorial are original SVG illustrations. Conceptual structure draws on the companion notes and the foundational papers cited above.</p>
+  <hr style="border:none;border-top:1px solid var(--rule);margin:24px 0">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+    <div><div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7165;margin-bottom:6px">Author</div><div>Prashant Kulkarni<br><span style="color:#7a7165">with help from Claude Opus (Anthropic)</span></div></div>
+    <div><div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7165;margin-bottom:6px">License</div><div><a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a><br><span style="color:#7a7165">Free to share &amp; adapt for non-commercial use, with attribution.</span></div></div>
+  </div>
+  <p style="margin-top:18px;font-size:11px;color:#7a7165">Part of the <em style="font-family:'Fraunces',serif;font-size:13px">learn-generative-ai</em> tutorial series · Chapter 03 of 10 · v1.0</p>
+</footer>
+</main>
+</div>
+
+<script>
+"use strict";
+// Latent space explorer
+const CLASSES = [
+  {x:0,y:-150,label:'0',color:'#b03d1a'},
+  {x:90,y:-120,label:'1',color:'#506348'},
+  {x:140,y:-40,label:'2',color:'#b88528'},
+  {x:130,y:60,label:'3',color:'#3a5a72'},
+  {x:60,y:130,label:'4',color:'#8a3a5e'},
+  {x:-60,y:130,label:'5',color:'#5e7a3a'},
+  {x:-130,y:60,label:'6',color:'#7a3a8a'},
+  {x:-140,y:-40,label:'7',color:'#3a8a7a'},
+  {x:-90,y:-120,label:'8',color:'#a55a2a'},
+  {x:0,y:0,label:'9',color:'#5a3aa5'},
+];
+const CW=600,CH=400;
+let vaeMode = true;
+let path = [];
+let dragging = false;
+
+const cvs = document.getElementById('ls-canvas');
+const ctx2 = cvs ? cvs.getContext('2d') : null;
+
+function toCanvas(wx,wy){return[(wx+200)/400*CW,(wy+200)/400*CH]}
+function toWorld(cx,cy){return[cx/CW*400-200,cy/CH*400-200]}
+
+function classWeight(wx,wy,cls,isVAE){
+  const dx=wx-cls.x, dy=wy-cls.y;
+  const dist2=dx*dx+dy*dy;
+  const sigma2 = isVAE ? 4000 : 600;
+  return Math.exp(-dist2/(2*sigma2));
+}
+
+function getColor(wx,wy){
+  let totalW=0;
+  let r=0,g=0,b=0;
+  for(const c of CLASSES){
+    const w=classWeight(wx,wy,c,vaeMode);
+    totalW+=w;
+    const cr=parseInt(c.color.slice(1,3),16);
+    const cg=parseInt(c.color.slice(3,5),16);
+    const cb=parseInt(c.color.slice(5,7),16);
+    r+=w*cr;g+=w*cg;b+=w*cb;
+  }
+  if(totalW<0.001) return vaeMode?'rgba(200,190,170,0.3)':'rgba(220,215,200,0.15)';
+  return `rgb(${Math.round(r/totalW)},${Math.round(g/totalW)},${Math.round(b/totalW)})`;
+}
+
+function draw(){
+  if(!ctx2) return;
+  // Background: sample every 4px
+  const imgData=ctx2.createImageData(CW,CH);
+  for(let py=0;py<CH;py+=3)for(let px=0;px<CW;px+=3){
+    const[wx,wy]=toWorld(px,py);
+    let totalW=0;
+    let r=0,g=0,b=0;
+    for(const c of CLASSES){
+      const w=classWeight(wx,wy,c,vaeMode);
+      totalW+=w;
+      r+=w*parseInt(c.color.slice(1,3),16);
+      g+=w*parseInt(c.color.slice(3,5),16);
+      b+=w*parseInt(c.color.slice(5,7),16);
+    }
+    const alpha = vaeMode ? Math.min(1,totalW*0.8) : (totalW>0.1?Math.min(1,totalW*3):0.03);
+    for(let dy=0;dy<3&&py+dy<CH;dy++)for(let dx=0;dx<3&&px+dx<CW;dx++){
+      const idx=((py+dy)*CW+(px+dx))*4;
+      if(totalW>0.001){
+        imgData.data[idx]=Math.round(r/totalW);
+        imgData.data[idx+1]=Math.round(g/totalW);
+        imgData.data[idx+2]=Math.round(b/totalW);
+        imgData.data[idx+3]=Math.round(alpha*120);
+      }else{
+        imgData.data[idx]=235;imgData.data[idx+1]=228;imgData.data[idx+2]=212;
+        imgData.data[idx+3]=255;
+      }
+    }
+  }
+  ctx2.putImageData(imgData,0,0);
+
+  // Class centers
+  for(const c of CLASSES){
+    const[cx,cy]=toCanvas(c.x,c.y);
+    ctx2.beginPath();ctx2.arc(cx,cy,14,0,Math.PI*2);
+    ctx2.fillStyle=c.color;ctx2.fill();
+    ctx2.fillStyle='#fff';ctx2.font='bold 11px "JetBrains Mono"';
+    ctx2.textAlign='center';ctx2.textBaseline='middle';
+    ctx2.fillText(c.label,cx,cy+1);
+  }
+
+  // Path
+  if(path.length>1){
+    ctx2.beginPath();
+    const[sx,sy]=toCanvas(path[0][0],path[0][1]);
+    ctx2.moveTo(sx,sy);
+    for(let i=1;i<path.length;i++){
+      const[px,py]=toCanvas(path[i][0],path[i][1]);
+      ctx2.lineTo(px,py);
+    }
+    ctx2.strokeStyle='rgba(26,24,20,0.6)';ctx2.lineWidth=2;ctx2.stroke();
+  }
+
+  // Sample dots on path
+  for(const p of path){
+    const[px,py]=toCanvas(p[0],p[1]);
+    ctx2.beginPath();ctx2.arc(px,py,4,0,Math.PI*2);
+    ctx2.fillStyle=getColor(p[0],p[1]);ctx2.fill();
+    ctx2.strokeStyle='#fff';ctx2.lineWidth=1.5;ctx2.stroke();
+  }
+
+  document.getElementById('ls-status').textContent=
+    vaeMode?'VAE mode · smooth transitions, full coverage':'AE mode · tight clusters, gaps between classes';
+}
+
+if(cvs){
+  cvs.addEventListener('mousedown',e=>{
+    dragging=true;path=[];
+    const rect=cvs.getBoundingClientRect();
+    const sx=CW/rect.width,sy=CH/rect.height;
+    const[wx,wy]=toWorld((e.clientX-rect.left)*sx,(e.clientY-rect.top)*sy);
+    path.push([wx,wy]);draw();
+  });
+  cvs.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    const rect=cvs.getBoundingClientRect();
+    const sx=CW/rect.width,sy=CH/rect.height;
+    const[wx,wy]=toWorld((e.clientX-rect.left)*sx,(e.clientY-rect.top)*sy);
+    path.push([wx,wy]);draw();
+  });
+  cvs.addEventListener('mouseup',()=>{dragging=false});
+  cvs.addEventListener('mouseleave',()=>{dragging=false});
+
+  document.getElementById('ls-vae').addEventListener('click',()=>{vaeMode=true;path=[];draw()});
+  document.getElementById('ls-ae').addEventListener('click',()=>{vaeMode=false;path=[];draw()});
+  document.getElementById('ls-clear').addEventListener('click',()=>{path=[];draw()});
+  draw();
+}
+
+// TOC highlight
+const sections=document.querySelectorAll('section[id]');
+const tocLinks=document.querySelectorAll('.toc a');
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){
+    tocLinks.forEach(l=>l.style.color='');
+    const a=document.querySelector(`.toc a[href="#${e.target.id}"]`);
+    if(a)a.style.color='var(--accent)';
+  }});
+},{rootMargin:'-30% 0px -60% 0px'});
+sections.forEach(s=>observer.observe(s));
+</script>
+</body>
+</html>

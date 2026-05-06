@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flow Models — A Tutorial from First Principles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+<style>
+:root{
+  --paper:#f4ede0;--paper-2:#ebe3d4;--card:#fbf7ef;
+  --ink:#1a1814;--ink-2:#3d3830;--ink-3:#7a7165;--rule:#d9cfba;
+  --accent:#3a8a7a;--accent-soft:#8ac4b8;
+  --rust:#b03d1a;--sage:#506348;--gold:#b88528;--indigo:#3a5a72;--plum:#8a3a5e;
+  --shadow:0 1px 0 rgba(26,24,20,.04),0 8px 30px -10px rgba(26,24,20,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{background:var(--paper);color:var(--ink);font-family:'Newsreader',Georgia,serif;font-size:19px;line-height:1.65;font-weight:380;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;background-image:radial-gradient(circle at 50% 10%,rgba(58,138,122,.06),transparent 40%),radial-gradient(circle at 50% 80%,rgba(184,133,40,.04),transparent 50%);background-attachment:fixed}
+.shell{max-width:1240px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:240px minmax(0,1fr);gap:64px}
+@media(max-width:980px){.shell{grid-template-columns:1fr;gap:0;padding:0 22px}.toc{display:none}}
+.toc{position:sticky;top:32px;align-self:start;padding:80px 0 0;font-family:'Fraunces',serif;font-size:13px;letter-spacing:.02em;height:calc(100vh - 32px);overflow-y:auto}
+.toc h4{font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:13px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.18em;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc}.toc li{counter-increment:toc;margin:6px 0;padding-left:28px;position:relative}
+.toc li::before{content:counter(toc,decimal-leading-zero);position:absolute;left:0;top:1px;font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace}
+.toc a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid transparent;transition:border .2s,color .2s}
+.toc a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+main{max-width:740px;padding:60px 0 120px}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:24px;display:flex;align-items:center;gap:14px}.eyebrow::after{content:"";flex:1;height:1px;background:var(--rule)}
+h1.title{font-family:'Fraunces',serif;font-weight:300;font-size:clamp(48px,7vw,84px);line-height:.95;letter-spacing:-.02em;margin-bottom:18px}
+h1.title em{font-style:italic;font-weight:400;color:var(--accent)}
+.subtitle{font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:24px;color:var(--ink-2);line-height:1.4;max-width:560px;margin-bottom:36px}
+.byline{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);padding-top:24px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:80px}
+.byline a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+section{margin:80px 0;scroll-margin-top:24px}
+.chapter-mark{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+.chapter-mark .num{display:inline-flex;width:32px;height:32px;background:var(--ink);color:var(--paper);border-radius:50%;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+h2{font-family:'Fraunces',serif;font-weight:400;font-size:42px;line-height:1.1;letter-spacing:-.015em;margin:14px 0 28px}
+h2 em{font-style:italic;color:var(--accent);font-weight:300}
+h3{font-family:'Fraunces',serif;font-weight:500;font-style:italic;font-size:24px;margin:40px 0 14px}
+p{margin:0 0 18px;hyphens:auto}
+.lede{font-size:22px;line-height:1.55;color:var(--ink-2);font-family:'Fraunces',serif;font-weight:300}
+.lede:first-letter{font-family:'Fraunces',serif;font-weight:600;font-size:78px;float:left;line-height:.85;margin:6px 10px 0 -2px;color:var(--accent)}
+strong{font-weight:600}.term{font-family:'Fraunces',serif;font-style:italic;font-weight:500;color:var(--accent);border-bottom:1px dotted var(--accent-soft)}
+code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--paper-2);padding:1px 6px;border-radius:3px}
+.pullquote{border-left:3px solid var(--accent);padding:8px 0 8px 24px;margin:32px 0;font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:24px;line-height:1.4;color:var(--ink-2)}
+.aside{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:24px 28px;margin:32px 0;box-shadow:var(--shadow)}
+.aside .label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.2em;margin-bottom:8px}
+.aside.insight{background:linear-gradient(180deg,#e8f4f0,#fbf6ec);border-color:var(--accent)}.aside.insight .label{color:var(--accent)}
+.aside.check{background:#eef0e8;border-color:#bcc4ad}.aside.check .label{color:var(--sage)}
+.aside p:last-child{margin-bottom:0}
+figure{margin:40px -40px;background:var(--card);border:1px solid var(--rule);border-radius:8px;overflow:hidden;box-shadow:var(--shadow)}
+@media(max-width:980px){figure{margin:32px 0}}
+figure svg{display:block;width:100%}
+figcaption{padding:14px 24px 18px;font-family:'Fraunces',serif;font-style:italic;font-size:15px;line-height:1.45;color:var(--ink-2);border-top:1px solid var(--rule)}
+figcaption .src{display:block;font-family:'JetBrains Mono',monospace;font-style:normal;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+.math-display{margin:24px 0;padding:18px 24px;background:var(--card);border-left:3px solid var(--accent);border-radius:0 4px 4px 0;font-size:.95em;overflow-x:auto}
+ul.fancy,ol.fancy{margin:18px 0 24px;padding-left:0;list-style:none}
+ul.fancy li,ol.fancy li{position:relative;padding-left:32px;margin-bottom:12px}
+ul.fancy li::before{content:"§";position:absolute;left:0;color:var(--accent);font-family:'Fraunces',serif;font-style:italic;font-size:1.1em}
+ol.fancy{counter-reset:fancy}ol.fancy li{counter-increment:fancy}
+ol.fancy li::before{content:counter(fancy,decimal-leading-zero);position:absolute;left:0;top:3px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:32px 0}
+@media(max-width:680px){.compare{grid-template-columns:1fr}}
+.compare>div{background:var(--card);padding:22px;border-radius:6px;border-top:3px solid var(--rule)}
+.compare h4{font-family:'Fraunces',serif;font-weight:500;font-style:italic;font-size:20px;margin-bottom:10px}
+.demo{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:24px;margin:32px 0;box-shadow:var(--shadow)}
+.demo button{background:var(--ink);color:var(--paper);border:none;padding:8px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;border-radius:3px;cursor:pointer;transition:background .2s}
+.demo button:hover{background:var(--accent)}
+.ornament{text-align:center;font-family:'Fraunces',serif;font-style:italic;font-size:32px;color:var(--accent);margin:60px 0 40px;opacity:.5;letter-spacing:.5em}
+footer{margin-top:120px;padding-top:40px;border-top:1px solid var(--rule);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);line-height:1.7}
+footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+</style>
+</head>
+<body>
+<a href="index.html" class="home-link" aria-label="Back to landing page">← Home</a>
+<style>
+.home-link{position:fixed;top:18px;left:22px;z-index:100;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--rust,#b03d1a);background:var(--card,#fbf6ec);border:1px solid var(--rule,#d9cfba);border-radius:14px;padding:6px 12px;text-decoration:none;box-shadow:0 2px 10px -4px rgba(26,24,20,.15);transition:background .15s,color .15s,border-color .15s}
+.home-link:hover{background:var(--rust,#b03d1a);color:#fff;border-color:var(--rust,#b03d1a)}
+</style>
+<div class="shell">
+<nav class="toc"><h4>Tutorial</h4>
+<ol>
+  <li><a href="#idea">The flow idea</a></li>
+  <li><a href="#cov">Change of variables</a></li>
+  <li><a href="#coupling">Coupling layers</a></li>
+  <li><a href="#auto">Autoregressive flows</a></li>
+  <li><a href="#cnf">Continuous normalizing flows</a></li>
+  <li><a href="#glow">Glow</a></li>
+  <li><a href="#fm">Flow matching</a></li>
+  <li><a href="#rectified">Rectified flows</a></li>
+  <li><a href="#compare">Flows vs diffusion</a></li>
+  <li><a href="#fieldnotes">Field notes: 2D flows</a></li>
+  <li><a href="#playground">Interactive: flow trajectories</a></li>
+  <li><a href="#takeaways">Takeaways &amp; exercises</a></li>
+</ol>
+</nav>
+<main>
+<header>
+  <div class="eyebrow">A First-Principles Tutorial · Chapter 06</div>
+  <h1 class="title">Flow <em>Models</em></h1>
+  <p class="subtitle">Invertible transformations, exact likelihoods, and the modern convergence of flows with diffusion.</p>
+  <div class="byline"><span>By Prashant Kulkarni · with help from Claude Opus</span><span><a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a></span></div>
+</header>
+
+<!-- ============ 1 ============ -->
+<section id="idea">
+  <div class="chapter-mark"><span class="num">1</span> The core idea</div>
+  <h2>Invertible transformations and <em>exact likelihood</em></h2>
+  <p class="lede">Every generative model family answers the same question differently: how do you turn simple noise into complex data? Normalizing flows take the mathematically cleanest path — define an invertible mapping between a Gaussian and the data distribution, then compute the exact likelihood using the change of variables formula. No lower bounds, no adversaries, no denoising.</p>
+  <p>A normalizing flow defines a <span class="term">bijection</span> $f_\theta: \mathcal{Z} \to \mathcal{X}$. To <strong>sample</strong>: draw $z \sim \mathcal{N}(0,I)$, compute $x = f_\theta(z)$. To <strong>evaluate density</strong>: compute $z = f_\theta^{-1}(x)$, apply the change of variables formula. Both directions work because $f_\theta$ is invertible.</p>
+  <figure>
+    <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" style="background:#fff">
+      <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7a7165"/></marker><marker id="ar-a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3a8a7a"/></marker><marker id="ar-r" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#b03d1a"/></marker></defs>
+      <text x="360" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Invertible chain: sample forward, evaluate backward</text>
+      <rect x="40" y="56" width="110" height="80" rx="6" fill="#3a8a7a"/>
+      <text x="95" y="88" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">z ~ N(0,I)</text>
+      <text x="95" y="108" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">simple base</text>
+      <line x1="150" y1="84" x2="224" y2="84" stroke="#3a8a7a" stroke-width="2" marker-end="url(#ar-a)"/>
+      <text x="187" y="76" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#3a8a7a">sample →</text>
+      <line x1="224" y1="108" x2="150" y2="108" stroke="#b03d1a" stroke-width="2" marker-end="url(#ar-r)"/>
+      <text x="187" y="124" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a">← evaluate</text>
+      <rect x="228" y="66" width="60" height="60" rx="4" fill="#b88528"/><text x="258" y="100" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">f₁</text>
+      <line x1="288" y1="96" x2="308" y2="96" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="312" y="66" width="60" height="60" rx="4" fill="#b88528"/><text x="342" y="100" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">f₂</text>
+      <line x1="372" y1="96" x2="392" y2="96" stroke="#7a7165" stroke-width="1.5"/>
+      <text x="404" y="100" font-family="JetBrains Mono,monospace" font-size="14" fill="#7a7165">···</text>
+      <line x1="418" y1="96" x2="438" y2="96" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="442" y="66" width="60" height="60" rx="4" fill="#b88528"/><text x="472" y="100" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">f_K</text>
+      <line x1="502" y1="96" x2="556" y2="96" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="560" y="56" width="120" height="80" rx="6" fill="#8a3a5e"/>
+      <text x="620" y="88" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">x ~ p_data</text>
+      <text x="620" y="108" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">complex data</text>
+      <text x="365" y="52" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b88528" letter-spacing=".1em">K INVERTIBLE LAYERS</text>
+      <rect x="140" y="158" width="440" height="28" rx="4" fill="#e8f4f0" stroke="#3a8a7a"/>
+      <text x="360" y="177" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">Every layer must be invertible with a tractable Jacobian determinant</text>
+    </svg>
+    <figcaption>Forward (green): sample from Gaussian, push through K invertible layers to produce data. Inverse (red): take data, pull back to Gaussian for exact density evaluation. Each layer must have a tractable Jacobian determinant.<span class="src">Original SVG</span></figcaption>
+  </figure>
+  <div class="aside insight"><div class="label">Why exact likelihood matters</div>
+  <p>Exact likelihood gives flows unique advantages: principled model comparison (log-likelihood on held-out data), no mode collapse (maximum likelihood covers all modes), no posterior gap (unlike VAEs), and lossless compression. The price: every layer must be invertible, constraining architecture design.</p></div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="cov">
+  <div class="chapter-mark"><span class="num">2</span> The math</div>
+  <h2>The change of variables <em>formula</em></h2>
+  <div class="math-display">$$\log p_\theta(x) = \log p_\mathcal{Z}\!\left(f_\theta^{-1}(x)\right) + \log\left|\det \frac{\partial f_\theta^{-1}}{\partial x}\right|$$</div>
+  <p>Two terms: the base density at the mapped point, plus a <strong>volume correction</strong> from the Jacobian determinant. When $f$ stretches a region, density decreases to keep total probability at 1. The Jacobian determinant measures exactly how much local volume changes.</p>
+  <p>For a chain of $K$ layers: $\log p_\theta(x) = \log p_\mathcal{Z}(z_0) - \sum_{k=1}^K \log|\det J_{f_k}|$. Training maximizes average log-likelihood — a clean, unbiased objective with no variational bounds or surrogate losses.</p>
+  <p>The design constraint: a general $D \times D$ determinant costs $O(D^3)$. For images ($D = 196{,}608$ for 256×256×3), this is impossible. Every practical flow architecture uses special structure — triangular Jacobians, block-diagonal patterns — to bring the cost to $O(D)$.</p>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="coupling">
+  <div class="chapter-mark"><span class="num">3</span> Architecture</div>
+  <h2>Coupling layers — the trick that makes <em>the Jacobian tractable</em></h2>
+  <p>The <span class="term">affine coupling layer</span> (Dinh et al., 2015/2017) splits the input into two halves and transforms one conditioned on the other:</p>
+  <div class="math-display">$$x_a = z_a \qquad x_b = z_b \odot \exp(s(z_a)) + t(z_a)$$</div>
+  <p>where $s$ (scale) and $t$ (translation) are arbitrary neural networks. They can be deep ResNets — their complexity doesn't affect the Jacobian cost.</p>
+  <figure>
+    <svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg" style="background:#fff">
+      <text x="360" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Affine coupling: split, condition, transform — triangular Jacobian</text>
+      <rect x="40" y="56" width="80" height="36" rx="4" fill="#3a8a7a"/><text x="80" y="78" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">z_a</text>
+      <rect x="40" y="102" width="80" height="36" rx="4" fill="#b88528"/><text x="80" y="124" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">z_b</text>
+      <!-- z_a identity -->
+      <line x1="120" y1="74" x2="560" y2="74" stroke="#3a8a7a" stroke-width="2" marker-end="url(#ar-a)"/>
+      <text x="340" y="66" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#3a8a7a" font-weight="600">identity (unchanged)</text>
+      <!-- z_a conditions s,t -->
+      <line x1="120" y1="74" x2="180" y2="74" stroke="#7a7165" stroke-width="1"/>
+      <line x1="180" y1="74" x2="180" y2="120" stroke="#7a7165" stroke-width="1"/>
+      <line x1="180" y1="120" x2="210" y2="120" stroke="#7a7165" stroke-width="1" marker-end="url(#ar)"/>
+      <line x1="180" y1="120" x2="180" y2="174" stroke="#7a7165" stroke-width="1"/>
+      <line x1="180" y1="174" x2="210" y2="174" stroke="#7a7165" stroke-width="1" marker-end="url(#ar)"/>
+      <rect x="214" y="104" width="100" height="32" rx="4" fill="#8a3a5e"/><text x="264" y="124" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">s(z_a) scale</text>
+      <rect x="214" y="158" width="100" height="32" rx="4" fill="#8a3a5e"/><text x="264" y="178" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">t(z_a) shift</text>
+      <!-- s,t to affine -->
+      <line x1="314" y1="120" x2="360" y2="120" stroke="#7a7165" stroke-width="1"/><line x1="360" y1="120" x2="360" y2="138" stroke="#7a7165" stroke-width="1"/>
+      <line x1="314" y1="174" x2="360" y2="174" stroke="#7a7165" stroke-width="1"/><line x1="360" y1="174" x2="360" y2="158" stroke="#7a7165" stroke-width="1"/>
+      <!-- z_b to affine -->
+      <line x1="120" y1="120" x2="150" y2="120" stroke="#7a7165" stroke-width="1"/><line x1="150" y1="120" x2="150" y2="148" stroke="#7a7165" stroke-width="1"/>
+      <line x1="150" y1="148" x2="340" y2="148" stroke="#7a7165" stroke-width="1" marker-end="url(#ar)"/>
+      <rect x="344" y="132" width="140" height="32" rx="4" fill="#b88528"/><text x="414" y="152" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">x_b = z_b·exp(s)+t</text>
+      <line x1="484" y1="148" x2="560" y2="148" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="564" y="56" width="80" height="36" rx="4" fill="#3a8a7a"/><text x="604" y="78" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">x_a</text>
+      <rect x="564" y="130" width="80" height="36" rx="4" fill="#b88528"/><text x="604" y="152" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">x_b</text>
+      <rect x="140" y="206" width="440" height="26" rx="4" fill="#e8f4f0" stroke="#3a8a7a"/>
+      <text x="360" y="224" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3a8a7a">log|det J| = Σ s(z_a)_j — just a sum! O(D) cost</text>
+    </svg>
+    <figcaption>Because $x_a$ doesn't depend on $z_b$, the Jacobian is lower triangular. Its determinant is simply the product of diagonal entries — the sum of scale values. Inversion is equally cheap: $z_b = (x_b - t(x_a)) \odot \exp(-s(x_a))$.<span class="src">Original SVG · concept after Dinh et al. (2017)</span></figcaption>
+  </figure>
+  <p>Since each layer only transforms half the dimensions, you <strong>alternate which half is transformed</strong> across layers. Stack 8–16 coupling layers with alternating masks and the flow becomes expressive enough for complex distributions.</p>
+</section>
+
+<!-- ============ 4 ============ -->
+<section id="auto">
+  <div class="chapter-mark"><span class="num">4</span> Autoregressive flows</div>
+  <h2>The <em>MAF vs IAF</em> tradeoff</h2>
+  <p>Autoregressive flows take coupling to its extreme: each dimension conditions on all <em>previous</em> dimensions. This maximizes expressiveness per layer but introduces a fundamental asymmetry:</p>
+  <div class="compare">
+    <div style="border-top-color:#b03d1a"><h4 style="color:#b03d1a">MAF</h4><p style="font-size:15px">Conditions on <em>observed</em> data. Density evaluation is fast (parallel). Sampling is slow ($D$ sequential steps). Use for: training, evaluation.</p></div>
+    <div style="border-top-color:#3a8a7a"><h4 style="color:#3a8a7a">IAF</h4><p style="font-size:15px">Conditions on <em>latent</em> variables. Sampling is fast (parallel). Density evaluation is slow. Use for: generation, VAE posteriors.</p></div>
+  </div>
+  <p>MAF and IAF are mathematical inverses. Coupling layers are a special case with two groups — sacrificing expressiveness for speed in <em>both</em> directions.</p>
+</section>
+
+<!-- ============ 5 ============ -->
+<section id="cnf">
+  <div class="chapter-mark"><span class="num">5</span> Going continuous</div>
+  <h2>Continuous normalizing flows — <em>infinite layers</em></h2>
+  <p>Take $K \to \infty$ with infinitesimal steps: instead of a discrete chain, define the transformation as an ODE: $dx/dt = v_\theta(x, t)$. The velocity field $v_\theta$ is any neural network — no invertibility constraints. To sample, integrate from $t=0$ to $t=1$. <span class="term">FFJORD</span> (Grathwohl et al., 2019) showed this works, using Hutchinson's trace estimator for the log-determinant. Downside: ODE simulation during training is expensive. This sets the stage for flow matching.</p>
+</section>
+
+<!-- ============ 6 ============ -->
+<section id="glow">
+  <div class="chapter-mark"><span class="num">6</span> Milestone</div>
+  <h2>Glow — <em>1×1 convolutions</em></h2>
+  <p><span class="term">Glow</span> (Kingma &amp; Dhariwal, 2018) was the first flow to generate realistic faces, using three innovations: <strong>invertible 1×1 convolutions</strong> as learned permutations (replacing fixed channel shuffling), <strong>multi-scale architecture</strong> (split off dimensions at each scale), and <strong>actnorm</strong> (data-dependent activation normalization). Glow demonstrated that flows could reach near-GAN quality — with exact log-likelihood as a bonus.</p>
+</section>
+
+<!-- ============ 7 ============ -->
+<section id="fm">
+  <div class="chapter-mark"><span class="num">7</span> The modern approach</div>
+  <h2>Flow matching — <em>simulation-free</em> training</h2>
+  <p><span class="term">Flow matching</span> (Lipman et al., 2023) trains a continuous normalizing flow <strong>without ODE simulation</strong> and <strong>without architectural constraints</strong>. Define a linear interpolation between noise and data:</p>
+  <div class="math-display">$$x_t = (1-t)\,x_0 + t\,x_1, \qquad x_0 \sim \mathcal{N}(0,I), \quad x_1 \sim p_\text{data}$$</div>
+  <p>The conditional velocity along this path is simply $x_1 - x_0$ — the direction from noise to data. The training objective is regression on this velocity:</p>
+  <div class="math-display">$$\mathcal{L}_\text{CFM} = \mathbb{E}_{t,\,x_0,\,x_1}\!\left[\|v_\theta(x_t, t) - (x_1 - x_0)\|^2\right]$$</div>
+  <figure>
+    <svg viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg" style="background:#fff">
+      <text x="360" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Flow matching: four-step training loop, structurally identical to DDPM</text>
+      <rect x="20" y="56" width="140" height="54" rx="4" fill="#3a8a7a"/><text x="90" y="76" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">① SAMPLE</text><text x="90" y="94" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity=".9">x₁~data, x₀~N(0,I), t~U</text>
+      <line x1="160" y1="83" x2="184" y2="83" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="188" y="56" width="140" height="54" rx="4" fill="#b88528"/><text x="258" y="76" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">② INTERPOLATE</text><text x="258" y="94" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity=".9">x_t = (1-t)·x₀ + t·x₁</text>
+      <line x1="328" y1="83" x2="352" y2="83" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="356" y="56" width="140" height="54" rx="4" fill="#8a3a5e"/><text x="426" y="76" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">③ PREDICT</text><text x="426" y="94" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity=".9">v̂ = v_θ(x_t, t)</text>
+      <line x1="496" y1="83" x2="520" y2="83" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="524" y="56" width="140" height="54" rx="4" fill="#b03d1a"/><text x="594" y="76" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">④ LOSS</text><text x="594" y="94" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity=".9">‖v̂ − (x₁−x₀)‖²</text>
+      <polyline points="594,110 594,148 90,148 90,110" stroke="#b03d1a" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#ar-r)"/>
+      <text x="342" y="164" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a">gradient update → repeat</text>
+      <rect x="60" y="184" width="600" height="28" rx="4" fill="#e8f4f0" stroke="#3a8a7a"/>
+      <text x="360" y="202" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#3d3830">vs DDPM: target is velocity (x₁−x₀) not noise (ε) · interpolation is linear not variance-preserving</text>
+    </svg>
+    <figcaption>The flow matching training loop is structurally identical to DDPM: sample, interpolate, predict, compute loss. The differences — linear interpolation, velocity target — produce straighter sampling trajectories requiring fewer ODE steps.<span class="src">Original SVG · concept after Lipman et al. (2023)</span></figcaption>
+  </figure>
+  <div class="aside insight"><div class="label">Why flow matching is taking over</div>
+  <p>The linear interpolation is the <strong>optimal transport</strong> path — the straightest possible trajectory between noise and data. Straighter = fewer ODE solver steps at inference (10–50 instead of 20–1000). Stable Diffusion 3, Flux, and SD 3.5 all use rectified flow matching.</p></div>
+</section>
+
+<!-- ============ 8 ============ -->
+<section id="rectified">
+  <div class="chapter-mark"><span class="num">8</span> Straightening</div>
+  <h2>Rectified flows — <em>even straighter paths</em></h2>
+  <p><span class="term">Rectified flows</span> (Liu et al., 2023) iteratively straighten trajectories: train a flow, generate matched pairs $(x_0, x_1)$ by running the ODE, retrain on straight-line interpolation between matched pairs, repeat. After rectification, trajectories are nearly straight — solvable with 1–2 Euler steps. This is the foundation of SD3's fast generation.</p>
+</section>
+
+<!-- ============ 9 ============ -->
+<section id="compare">
+  <div class="chapter-mark"><span class="num">9</span> Landscape</div>
+  <h2>Classical flows vs flow matching <em>vs diffusion</em></h2>
+  <figure>
+    <svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg" style="background:#fff">
+      <text x="360" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Three generations of flow-based generative models</text>
+      <rect x="20" y="44" width="210" height="150" rx="6" fill="#fcf8ee" stroke="#b88528" stroke-width="1.5"/>
+      <text x="125" y="64" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#b88528" font-weight="600">CLASSICAL FLOWS</text>
+      <text x="125" y="82" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">RealNVP, Glow, MAF</text>
+      <text x="125" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">✓ exact likelihood</text>
+      <text x="125" y="120" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">✓ fast sampling</text>
+      <text x="125" y="136" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a">✗ constrained architecture</text>
+      <text x="125" y="152" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a">✗ limited quality</text>
+      <text x="125" y="174" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">2015–2020</text>
+      <rect x="255" y="44" width="210" height="150" rx="6" fill="#fcf8ee" stroke="#3a8a7a" stroke-width="2"/>
+      <text x="360" y="64" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3a8a7a" font-weight="600">FLOW MATCHING ★</text>
+      <text x="360" y="82" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">CFM, rectified flows</text>
+      <text x="360" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#3a8a7a">✓ no arch constraints</text>
+      <text x="360" y="120" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#3a8a7a">✓ straight trajectories</text>
+      <text x="360" y="136" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#3a8a7a">✓ few sampling steps</text>
+      <text x="360" y="152" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#3a8a7a">✓ simple training</text>
+      <text x="360" y="174" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#3a8a7a" font-weight="600">2023–now</text>
+      <rect x="490" y="44" width="210" height="150" rx="6" fill="#fcf8ee" stroke="#3a5a72" stroke-width="1.5"/>
+      <text x="595" y="64" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3a5a72" font-weight="600">DIFFUSION</text>
+      <text x="595" y="82" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">DDPM, score SDE</text>
+      <text x="595" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">✓ no arch constraints</text>
+      <text x="595" y="120" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">✓ high quality + diversity</text>
+      <text x="595" y="136" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a">✗ curved trajectories</text>
+      <text x="595" y="152" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a">✗ many sampling steps</text>
+      <text x="595" y="174" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">2020–2023</text>
+      <text x="360" y="220" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">Flow matching and diffusion have converged — SD3 and Flux blur the boundary</text>
+    </svg>
+    <figcaption>Classical flows had exact likelihood but constrained architectures. Diffusion removed constraints but used curved paths. Flow matching achieves unconstrained architectures with straight OT paths — the current state of the art.<span class="src">Original SVG</span></figcaption>
+  </figure>
+  <p>The deep connection: $v_t(x) = f(t)x + g(t)^2 \nabla_x \log p_t(x)$ — velocity is a linear combination of drift and score. Flow matching and diffusion use the same architectures (DiT), same conditioning (CLIP/T5), same infrastructure. Whether SD3 is "a diffusion model" or "a flow model" has no clean answer.</p>
+</section>
+
+<!-- ============ 10 ============ -->
+<section id="fieldnotes">
+  <div class="chapter-mark"><span class="num">10</span> Field notes</div>
+  <h2>Flows on <em>2D distributions</em></h2>
+  <div class="aside"><div class="label">Source</div><p>Experiments from the <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/06-flow-models/notebook.ipynb">Module 06 notebook</a>. Implements RealNVP coupling layers and flow matching on 2D distributions (moons, rings).</p></div>
+  <h3>Watching coupling layers warp space</h3>
+  <p>The notebook visualizes how 8 affine coupling layers progressively warp a Gaussian grid into the two-moons distribution. Each layer applies a smooth, invertible deformation — grid lines bend but never cross (invertibility means no two points map to the same location). Early layers do coarse rearrangement; later layers handle fine-grained shape matching.</p>
+  <h3>Exact density on a grid</h3>
+  <p>Because flows compute exact likelihood, you can evaluate $\log p_\theta(x)$ at every point on a 2D grid and plot the learned density surface. The result matches the empirical distribution — peaks at the moons, valleys between. No other generative model family gives you this exact, pointwise density evaluation.</p>
+  <h3>Flow matching trajectories</h3>
+  <p>The flow matching implementation shows particle trajectories from noise to data. Unlike coupling layers (discrete jumps), flow matching particles follow <strong>nearly straight lines</strong> — each particle takes an almost direct path from noise to data. This straightness directly explains why flow matching needs fewer ODE steps.</p>
+  <h3>Velocity field at multiple timesteps</h3>
+  <p>At $t=0$, the velocity arrows point outward from the origin toward data. At $t=0.5$, the field is most structured — the target shape is visible. At $t \approx 1$, arrows become small — particles have arrived.</p>
+</section>
+
+<!-- ============ 11 ============ -->
+<section id="playground">
+  <div class="chapter-mark"><span class="num">11</span> Playground</div>
+  <h2>Watch particles flow from <em>noise to data</em></h2>
+  <p>Particles start as Gaussian noise and follow straight trajectories to form a ring of clusters. Drag the slider to scrub through time, or press play. Toggle "trails" to see how straight the paths are.</p>
+  <div class="demo" id="flow-demo">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px;font-family:'JetBrains Mono',monospace;font-size:11px">
+      <button id="fl-play">▶ Play</button>
+      <button id="fl-reset">↻ Reset</button>
+      <label style="display:flex;align-items:center;gap:6px;color:var(--ink-2)">t = <input type="range" id="fl-slider" min="0" max="100" value="0" style="width:180px"><span id="fl-t">0.00</span></label>
+      <label style="display:flex;align-items:center;gap:6px;color:var(--ink-2)"><input type="checkbox" id="fl-trails" style="margin:0" checked> trails</label>
+    </div>
+    <canvas id="fl-canvas" width="600" height="400" style="width:100%;max-width:600px;border:1px solid var(--rule);border-radius:4px;background:#fff;display:block;margin:0 auto"></canvas>
+    <p style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);text-align:center" id="fl-status">t = 0.00 · Gaussian noise · drag slider or press play</p>
+  </div>
+</section>
+
+<div class="ornament">⁂ ⁂ ⁂</div>
+
+<!-- ============ 12 ============ -->
+<section id="takeaways">
+  <div class="chapter-mark"><span class="num">12</span> Closing</div>
+  <h2>Takeaways &amp; <em>exercises</em></h2>
+  <ol class="fancy">
+    <li><strong>Flows compute exact likelihood</strong> via the change of variables formula — no bounds, no adversaries.</li>
+    <li><strong>Coupling layers make the Jacobian tractable</strong> by exploiting triangular structure — $O(D)$ not $O(D^3)$.</li>
+    <li><strong>MAF and IAF are inverses</strong> — fast density/slow sampling vs fast sampling/slow density.</li>
+    <li><strong>Flow matching removes all constraints</strong> — learn a velocity field via regression, no invertibility needed.</li>
+    <li><strong>Straight trajectories = fewer steps.</strong> OT interpolation produces straighter paths than diffusion.</li>
+    <li><strong>Flow matching and diffusion have converged.</strong> SD3 and Flux use flow matching with diffusion-style architectures.</li>
+  </ol>
+  <div class="aside check"><div class="label">Exercises</div>
+    <p><strong>1.</strong> Why must flow transformations be invertible? What would go wrong if two inputs mapped to the same latent code?</p>
+    <p><strong>2.</strong> Write out the 4×4 Jacobian for a 2+2 affine coupling split. Verify it's triangular and its determinant is $\prod \exp(s_j)$.</p>
+    <p><strong>3.</strong> Open the notebook. Compare coupling-layer grid warping with flow matching trajectories. Which looks straighter?</p>
+    <p><strong>4.</strong> In the playground above, toggle trails on. Are the paths straight? Compare mentally to the diffusion demo in Chapter 04.</p>
+    <p><strong>5.</strong> List three differences between flow matching and DDPM training (interpolation, target, path shape).</p>
+  </div>
+  <h3>Further reading</h3>
+  <ul class="fancy">
+    <li>Dinh et al. (2015/2017) — <em>NICE</em> and <em>RealNVP</em>. Coupling-layer flows.</li>
+    <li>Papamakarios et al. (2017) — <em>MAF</em>. Masked autoregressive flows.</li>
+    <li>Kingma &amp; Dhariwal (2018) — <em>Glow</em>. Invertible 1×1 convolutions.</li>
+    <li>Grathwohl et al. (2019) — <em>FFJORD</em>. Continuous normalizing flows.</li>
+    <li>Lipman et al. (2023) — <em>Flow Matching for Generative Modeling</em>.</li>
+    <li>Liu et al. (2023) — <em>Rectified Flows</em>. Iterative straightening.</li>
+    <li>Esser et al. (2024) — <em>Stable Diffusion 3</em>. Flow matching in production.</li>
+    <li>P. Kulkarni — <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/06-flow-models/notebook.ipynb"><em>Module 06 notebook</em></a>.</li>
+  </ul>
+</section>
+
+<footer>
+  <p style="margin-bottom:14px">All figures in this tutorial are original SVG illustrations. Conceptual structure draws on the companion notes and the papers cited above.</p>
+  <hr style="border:none;border-top:1px solid var(--rule);margin:24px 0">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+    <div><div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7165;margin-bottom:6px">Author</div><div>Prashant Kulkarni<br><span style="color:#7a7165">with help from Claude Opus (Anthropic)</span></div></div>
+    <div><div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7165;margin-bottom:6px">License</div><div><a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a><br><span style="color:#7a7165">Free to share &amp; adapt for non-commercial use, with attribution.</span></div></div>
+  </div>
+  <p style="margin-top:18px;font-size:11px;color:#7a7165">Part of the <em style="font-family:'Fraunces',serif;font-size:13px">learn-generative-ai</em> tutorial series · Chapter 06 of 10 · v1.0</p>
+</footer>
+</main>
+</div>
+
+<script>
+"use strict";
+const FW=600,FH=400;
+const fc=document.getElementById('fl-canvas');
+const fctx=fc?fc.getContext('2d'):null;
+const N_PTS=200,N_CL=6,RING=130;
+const clusters=[];
+for(let i=0;i<N_CL;i++){const a=i/N_CL*Math.PI*2;clusters.push({x:FW/2+Math.cos(a)*RING,y:FH/2+Math.sin(a)*RING})}
+function randn(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+let pts=[],curT=0,animating=false,animId=null;
+const colors=['#3a8a7a','#b88528','#8a3a5e','#b03d1a','#506348','#3a5a72'];
+function initPts(){pts=[];for(let i=0;i<N_PTS;i++){const t=clusters[i%N_CL];pts.push({x0:FW/2+randn()*80,y0:FH/2+randn()*80,x1:t.x+randn()*14,y1:t.y+randn()*14,c:colors[i%6]})}}
+function drawFlow(){if(!fctx)return;fctx.clearRect(0,0,FW,FH);
+const showT=document.getElementById('fl-trails')?.checked;
+for(const c of clusters){fctx.beginPath();fctx.arc(c.x,c.y,18,0,Math.PI*2);fctx.fillStyle='rgba(58,138,122,0.08)';fctx.fill()}
+for(const p of pts){const x=p.x0+(p.x1-p.x0)*curT,y=p.y0+(p.y1-p.y0)*curT;
+if(showT&&curT>0.02){fctx.beginPath();fctx.moveTo(p.x0,p.y0);fctx.lineTo(x,y);fctx.strokeStyle=p.c+'30';fctx.lineWidth=1;fctx.stroke()}
+fctx.beginPath();fctx.arc(x,y,3,0,Math.PI*2);fctx.fillStyle=p.c;fctx.globalAlpha=.7;fctx.fill();fctx.globalAlpha=1}
+const s=document.getElementById('fl-status');
+if(curT<.02)s.textContent=`t = ${curT.toFixed(2)} · Gaussian noise`;
+else if(curT>.98)s.textContent=`t = ${curT.toFixed(2)} · data distribution · ${N_CL} clusters`;
+else s.textContent=`t = ${curT.toFixed(2)} · particles following straight OT paths`}
+function animate(){if(!animating)return;curT=Math.min(1,curT+.008);document.getElementById('fl-slider').value=Math.round(curT*100);document.getElementById('fl-t').textContent=curT.toFixed(2);drawFlow();if(curT>=1){animating=false;document.getElementById('fl-play').textContent='▶ Play';return}animId=requestAnimationFrame(animate)}
+if(fc){initPts();drawFlow();
+document.getElementById('fl-slider').addEventListener('input',e=>{animating=false;curT=e.target.value/100;document.getElementById('fl-t').textContent=curT.toFixed(2);drawFlow()});
+document.getElementById('fl-play').addEventListener('click',()=>{if(animating){animating=false;document.getElementById('fl-play').textContent='▶ Resume';return}if(curT>=1){curT=0;initPts()}animating=true;document.getElementById('fl-play').textContent='⏸ Pause';animate()});
+document.getElementById('fl-reset').addEventListener('click',()=>{animating=false;curT=0;initPts();document.getElementById('fl-slider').value=0;document.getElementById('fl-t').textContent='0.00';document.getElementById('fl-play').textContent='▶ Play';drawFlow()});
+document.getElementById('fl-trails').addEventListener('change',drawFlow)}
+const sections=document.querySelectorAll('section[id]');const tocLinks=document.querySelectorAll('.toc a');
+const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){tocLinks.forEach(l=>l.style.color='');const a=document.querySelector(`.toc a[href="#${e.target.id}"]`);if(a)a.style.color='var(--accent)'}})},{rootMargin:'-30% 0px -60% 0px'});
+sections.forEach(s=>observer.observe(s));
+</script>
+</body>
+</html>

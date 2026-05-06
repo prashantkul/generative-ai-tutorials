@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Encoder-Decoder — A Tutorial from First Principles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+<style>
+:root{--paper:#f4ede0;--paper-2:#ebe3d4;--card:#fbf7ef;--ink:#1a1814;--ink-2:#3d3830;--ink-3:#7a7165;--rule:#d9cfba;--accent:#5e7a3a;--accent-soft:#a4b88a;--shadow:0 1px 0 rgba(26,24,20,.04),0 8px 30px -10px rgba(26,24,20,.08)}
+*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{background:var(--paper);color:var(--ink);font-family:'Newsreader',Georgia,serif;font-size:19px;line-height:1.65;font-weight:380;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;background-image:radial-gradient(circle at 30% 20%,rgba(94,122,58,.06),transparent 40%);background-attachment:fixed}
+.shell{max-width:1240px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:240px minmax(0,1fr);gap:64px}@media(max-width:980px){.shell{grid-template-columns:1fr;gap:0;padding:0 22px}.toc{display:none}}
+.toc{position:sticky;top:32px;align-self:start;padding:80px 0 0;font-family:'Fraunces',serif;font-size:13px;letter-spacing:.02em;height:calc(100vh - 32px);overflow-y:auto}
+.toc h4{font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:13px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.18em;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc}.toc li{counter-increment:toc;margin:6px 0;padding-left:28px;position:relative}
+.toc li::before{content:counter(toc,decimal-leading-zero);position:absolute;left:0;top:1px;font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace}
+.toc a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid transparent;transition:border .2s,color .2s}.toc a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+main{max-width:740px;padding:60px 0 120px}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:24px;display:flex;align-items:center;gap:14px}.eyebrow::after{content:"";flex:1;height:1px;background:var(--rule)}
+h1.title{font-family:'Fraunces',serif;font-weight:300;font-size:clamp(48px,7vw,76px);line-height:.95;letter-spacing:-.02em;margin-bottom:18px}h1.title em{font-style:italic;font-weight:400;color:var(--accent)}
+.subtitle{font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:24px;color:var(--ink-2);line-height:1.4;max-width:560px;margin-bottom:36px}
+.byline{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);padding-top:24px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:80px}.byline a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+section{margin:80px 0;scroll-margin-top:24px}
+.chapter-mark{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+.chapter-mark .num{display:inline-flex;width:32px;height:32px;background:var(--ink);color:var(--paper);border-radius:50%;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+h2{font-family:'Fraunces',serif;font-weight:400;font-size:42px;line-height:1.1;letter-spacing:-.015em;margin:14px 0 28px}h2 em{font-style:italic;color:var(--accent);font-weight:300}
+h3{font-family:'Fraunces',serif;font-weight:500;font-style:italic;font-size:24px;margin:40px 0 14px}
+p{margin:0 0 18px;hyphens:auto}
+.lede{font-size:22px;line-height:1.55;color:var(--ink-2);font-family:'Fraunces',serif;font-weight:300}
+.lede:first-letter{font-family:'Fraunces',serif;font-weight:600;font-size:78px;float:left;line-height:.85;margin:6px 10px 0 -2px;color:var(--accent)}
+strong{font-weight:600}.term{font-family:'Fraunces',serif;font-style:italic;font-weight:500;color:var(--accent);border-bottom:1px dotted var(--accent-soft)}
+code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--paper-2);padding:1px 6px;border-radius:3px}
+.pullquote{border-left:3px solid var(--accent);padding:8px 0 8px 24px;margin:32px 0;font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:24px;line-height:1.4;color:var(--ink-2)}
+.aside{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:24px 28px;margin:32px 0;box-shadow:var(--shadow)}
+.aside .label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.2em;margin-bottom:8px;color:var(--accent)}
+.aside.insight{background:linear-gradient(180deg,#eef3ea,#fbf6ec);border-color:var(--accent)}
+.aside.check{background:#eef0e8;border-color:#bcc4ad}.aside.check .label{color:#506348}
+.aside p:last-child{margin-bottom:0}
+figure{margin:40px -40px;background:var(--card);border:1px solid var(--rule);border-radius:8px;overflow:hidden;box-shadow:var(--shadow)}@media(max-width:980px){figure{margin:32px 0}}
+figure svg{display:block;width:100%}
+figcaption{padding:14px 24px 18px;font-family:'Fraunces',serif;font-style:italic;font-size:15px;line-height:1.45;color:var(--ink-2);border-top:1px solid var(--rule)}
+figcaption .src{display:block;font-family:'JetBrains Mono',monospace;font-style:normal;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+.math-display{margin:24px 0;padding:18px 24px;background:var(--card);border-left:3px solid var(--accent);border-radius:0 4px 4px 0;font-size:.95em;overflow-x:auto}
+ul.fancy,ol.fancy{margin:18px 0 24px;padding-left:0;list-style:none}ul.fancy li,ol.fancy li{position:relative;padding-left:32px;margin-bottom:12px}
+ul.fancy li::before{content:"§";position:absolute;left:0;color:var(--accent);font-family:'Fraunces',serif;font-style:italic;font-size:1.1em}
+ol.fancy{counter-reset:fancy}ol.fancy li{counter-increment:fancy}ol.fancy li::before{content:counter(fancy,decimal-leading-zero);position:absolute;left:0;top:3px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600}
+.demo{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:24px;margin:32px 0;box-shadow:var(--shadow)}
+.demo button{background:var(--ink);color:var(--paper);border:none;padding:8px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;border-radius:3px;cursor:pointer;transition:background .2s}.demo button:hover{background:var(--accent)}
+.ornament{text-align:center;font-family:'Fraunces',serif;font-style:italic;font-size:32px;color:var(--accent);margin:60px 0 40px;opacity:.5;letter-spacing:.5em}
+footer{margin-top:120px;padding-top:40px;border-top:1px solid var(--rule);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);line-height:1.7}footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+</style>
+</head>
+<body>
+<a href="index.html" class="home-link" aria-label="Back to landing page">← Home</a>
+<style>
+.home-link{position:fixed;top:18px;left:22px;z-index:100;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--rust,#b03d1a);background:var(--card,#fbf6ec);border:1px solid var(--rule,#d9cfba);border-radius:14px;padding:6px 12px;text-decoration:none;box-shadow:0 2px 10px -4px rgba(26,24,20,.15);transition:background .15s,color .15s,border-color .15s}
+.home-link:hover{background:var(--rust,#b03d1a);color:#fff;border-color:var(--rust,#b03d1a)}
+</style>
+<div class="shell">
+<nav class="toc"><h4>Tutorial</h4><ol>
+  <li><a href="#idea">The seq2seq idea</a></li>
+  <li><a href="#bottleneck">The bottleneck &amp; attention</a></li>
+  <li><a href="#crossattn">Cross-attention deep dive</a></li>
+  <li><a href="#block">The decoder block</a></li>
+  <li><a href="#t5">T5: text-to-text</a></li>
+  <li><a href="#bart">BART &amp; denoising</a></li>
+  <li><a href="#vision">Vision encoder-decoders</a></li>
+  <li><a href="#when">When to use enc-dec</a></li>
+  <li><a href="#fieldnotes">Field notes: number translation</a></li>
+  <li><a href="#playground">Interactive: cross-attention</a></li>
+  <li><a href="#takeaways">Takeaways &amp; exercises</a></li>
+</ol></nav>
+<main>
+<header>
+  <div class="eyebrow">A First-Principles Tutorial · Chapter 08</div>
+  <h1 class="title">Encoder-<em>Decoder</em></h1>
+  <p class="subtitle">Two-part architectures for translation, summarization, and any task where input and output are different sequences.</p>
+  <div class="byline"><span>By Prashant Kulkarni · with help from Claude Opus</span><span><a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a></span></div>
+</header>
+
+<section id="idea">
+  <div class="chapter-mark"><span class="num">1</span> The core idea</div>
+  <h2>Input a sequence, <em>output a different one</em></h2>
+  <p class="lede">Some tasks are fundamentally asymmetric: the input is a complete, known sequence and the output is a different sequence that must be generated token by token. Translation (English → French), summarization (article → abstract), speech-to-text (audio → words). The encoder-decoder architecture handles this by splitting the model into two halves connected by a bridge.</p>
+  <div class="math-display">$$P(y \mid x) = \prod_{t=1}^{m} P(y_t \mid y_{<t},\, \mathbf{z}) \qquad \text{where } \mathbf{z} = \text{Encoder}(x)$$</div>
+  <figure>
+    <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" style="background:#fff">
+      <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7a7165"/></marker></defs>
+      <text x="360" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Encoder understands the input bidirectionally · Decoder generates the output causally</text>
+      <rect x="30" y="60" width="80" height="50" rx="4" fill="#fff" stroke="#7a7165"/><text x="70" y="82" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830" font-weight="600">input x</text><text x="70" y="98" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#7a7165">"The cat sat"</text>
+      <line x1="110" y1="85" x2="140" y2="85" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="144" y="50" width="180" height="70" rx="6" fill="#3a5a72"/><text x="234" y="78" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">Encoder</text><text x="234" y="96" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">bidirectional attention</text><text x="234" y="110" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">→ representations z</text>
+      <line x1="324" y1="85" x2="370" y2="85" stroke="#5e7a3a" stroke-width="2" stroke-dasharray="5,3"/>
+      <text x="347" y="75" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#5e7a3a" font-weight="600">cross-attn</text>
+      <rect x="374" y="50" width="180" height="70" rx="6" fill="#5e7a3a"/><text x="464" y="78" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">Decoder</text><text x="464" y="96" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">causal self-attention</text><text x="464" y="110" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">+ cross-attention to z</text>
+      <line x1="554" y1="85" x2="584" y2="85" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="588" y="60" width="100" height="50" rx="4" fill="#fff" stroke="#7a7165"/><text x="638" y="82" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830" font-weight="600">output y</text><text x="638" y="98" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#7a7165">"Le chat assis"</text>
+      <rect x="140" y="148" width="440" height="28" rx="4" fill="#eef3ea" stroke="#5e7a3a"/>
+      <text x="360" y="166" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">The encoder sees everything bidirectionally · the decoder generates left-to-right</text>
+    </svg>
+    <figcaption>The encoder processes the full input with bidirectional attention — every token sees every other token. The decoder generates the output autoregressively, using cross-attention to selectively retrieve information from the encoder at each step.<span class="src">Original SVG</span></figcaption>
+  </figure>
+  <p>Why not use a decoder-only model? A decoder-only model (GPT) processes input <em>causally</em> — each input token only sees tokens before it. The encoder-decoder split lets the encoder see the entire input <em>bidirectionally</em>, which is a strictly richer representation for understanding the source.</p>
+</section>
+
+<section id="bottleneck">
+  <div class="chapter-mark"><span class="num">2</span> History</div>
+  <h2>From bottleneck <em>to attention</em></h2>
+  <p>The original RNN seq2seq (Sutskever et al., 2014) compressed the entire input into a single fixed-size vector — an information bottleneck. For long sequences, critical details were lost.</p>
+  <p><span class="term">Bahdanau attention</span> (2015) solved this: instead of one context vector, the decoder attends to <em>all</em> encoder hidden states at each generation step. The attention weights $\alpha_{t,i}$ learned soft alignment — which input tokens are relevant for each output token. This was the conceptual precursor to the transformer's cross-attention mechanism.</p>
+</section>
+
+<section id="crossattn">
+  <div class="chapter-mark"><span class="num">3</span> Key mechanism</div>
+  <h2>Cross-attention — <em>the bridge</em></h2>
+  <p>In self-attention (Chapter 02), Q, K, V all come from the same sequence. In <span class="term">cross-attention</span>, Q comes from the <strong>decoder</strong> but K and V come from the <strong>encoder</strong>:</p>
+  <div class="math-display">$$\text{CrossAttn}(Q_\text{dec}, K_\text{enc}, V_\text{enc}) = \text{softmax}\!\left(\frac{Q_\text{dec}\, K_\text{enc}^T}{\sqrt{d_k}}\right) V_\text{enc}$$</div>
+  <figure>
+    <svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg" style="background:#fff">
+      <text x="360" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Cross-attention: queries from decoder, keys &amp; values from encoder</text>
+      <!-- Encoder output -->
+      <rect x="30" y="60" width="140" height="50" rx="4" fill="#3a5a72"/><text x="100" y="82" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">Encoder output</text><text x="100" y="98" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">H_enc (n × d)</text>
+      <!-- K and V projections -->
+      <line x1="170" y1="74" x2="210" y2="74" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <line x1="170" y1="96" x2="210" y2="96" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="214" y="58" width="50" height="26" rx="3" fill="#3a5a72"/><text x="239" y="75" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">K</text>
+      <rect x="214" y="88" width="50" height="26" rx="3" fill="#3a5a72"/><text x="239" y="105" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">V</text>
+      <!-- Decoder hidden states -->
+      <rect x="30" y="150" width="140" height="50" rx="4" fill="#5e7a3a"/><text x="100" y="172" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">Decoder state</text><text x="100" y="188" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">H_dec (m × d)</text>
+      <!-- Q projection -->
+      <line x1="170" y1="175" x2="210" y2="175" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="214" y="162" width="50" height="26" rx="3" fill="#5e7a3a"/><text x="239" y="179" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">Q</text>
+      <!-- All go to attention -->
+      <line x1="264" y1="71" x2="340" y2="71" stroke="#3a5a72" stroke-width="1.5"/><line x1="340" y1="71" x2="340" y2="108" stroke="#3a5a72" stroke-width="1.5"/>
+      <line x1="264" y1="101" x2="340" y2="101" stroke="#3a5a72" stroke-width="1.5"/><line x1="340" y1="101" x2="340" y2="108" stroke="#3a5a72" stroke-width="1.5"/>
+      <line x1="264" y1="175" x2="340" y2="175" stroke="#5e7a3a" stroke-width="1.5"/><line x1="340" y1="175" x2="340" y2="148" stroke="#5e7a3a" stroke-width="1.5"/>
+      <!-- Attention box -->
+      <rect x="300" y="108" width="150" height="40" rx="4" fill="#b88528"/><text x="375" y="132" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">softmax(QKᵀ/√d_k) · V</text>
+      <!-- Output -->
+      <line x1="450" y1="128" x2="490" y2="128" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="494" y="108" width="140" height="40" rx="4" fill="#5e7a3a"/><text x="564" y="124" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">cross-attn output</text><text x="564" y="140" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity=".8">(m × d_v)</text>
+      <text x="360" y="222" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">The decoder asks "what do I need?" · the encoder answers "here's what I have"</text>
+    </svg>
+    <figcaption>Cross-attention information flow. Queries come from the decoder ("what information do I need?"), keys from the encoder ("what do I contain?"), values from the encoder ("here's the content"). The attention weights $\alpha_{t,i}$ form a soft alignment between output and input positions.<span class="src">Original SVG</span></figcaption>
+  </figure>
+  <p>For translation, cross-attention weights often trace a roughly <strong>diagonal pattern</strong> (monotonic alignment), but for summarization they can be highly non-monotonic — the decoder might jump across the input to gather scattered key facts.</p>
+</section>
+
+<section id="block">
+  <div class="chapter-mark"><span class="num">4</span> Architecture</div>
+  <h2>The decoder block — <em>three sub-layers</em></h2>
+  <p>A decoder block in an encoder-decoder transformer has <strong>three</strong> sub-layers (vs two in a decoder-only model):</p>
+  <ol class="fancy">
+    <li><strong>Causal self-attention</strong> — the decoder attends to its own previously generated tokens (masked, same as GPT).</li>
+    <li><strong>Cross-attention</strong> — the decoder attends to the encoder's output (the bridge).</li>
+    <li><strong>MLP</strong> — the standard feed-forward expansion/compression.</li>
+  </ol>
+  <p>Each sub-layer has its own residual connection and layer norm: $h' = \text{LN}(\text{SubLayer}(h) + h)$. The encoder block is simpler — just self-attention (bidirectional, no mask) + MLP.</p>
+</section>
+
+<section id="t5">
+  <div class="chapter-mark"><span class="num">5</span> T5</div>
+  <h2>Text-to-text — <em>one format for everything</em></h2>
+  <p><span class="term">T5</span> (Raffel et al., 2020) unified all NLP as text-to-text: every task is "given this text, produce that text." Translation: <code>"translate English to French: The cat"</code> → <code>"Le chat"</code>. Summarization: <code>"summarize: [article]"</code> → <code>"[summary]"</code>. Classification: <code>"sentiment: I loved it"</code> → <code>"positive"</code>.</p>
+  <p>One model, one loss, one pipeline. T5 was pre-trained with <strong>span corruption</strong>: random text spans are replaced with sentinel tokens, and the model fills them in. This denoising objective teaches both understanding (encoder) and generation (decoder).</p>
+</section>
+
+<section id="bart">
+  <div class="chapter-mark"><span class="num">6</span> BART</div>
+  <h2>BART — <em>denoising seq2seq</em></h2>
+  <p><span class="term">BART</span> (Lewis et al., 2019) uses a more aggressive denoising objective: tokens deleted, shuffled, masked, or replaced. The encoder sees the corrupted text; the decoder reconstructs the original. This teaches the model to handle many types of noise, making it especially strong for generation tasks like summarization and dialogue.</p>
+</section>
+
+<section id="vision">
+  <div class="chapter-mark"><span class="num">7</span> Beyond text</div>
+  <h2>Vision encoder-decoders — <em>Whisper, captioning</em></h2>
+  <ul class="fancy">
+    <li><strong>Whisper</strong> (Radford et al., 2023): encoder processes audio spectrogram features; decoder generates text transcription. An encoder-decoder that bridges modalities.</li>
+    <li><strong>Image captioning</strong>: a vision encoder (ViT/CLIP) produces image representations; a text decoder generates captions, using cross-attention to attend to image regions.</li>
+    <li><strong>Pix2Seq</strong>: frames object detection as seq2seq — the encoder sees the image, the decoder outputs bounding box coordinates as token sequences.</li>
+  </ul>
+</section>
+
+<section id="when">
+  <div class="chapter-mark"><span class="num">8</span> Decision</div>
+  <h2>When to use <em>encoder-decoder vs decoder-only</em></h2>
+  <p>Since 2022, the trend has been strongly toward decoder-only (GPT-4, Claude, LLaMA, Gemini). But encoder-decoder has structural advantages when <strong>input and output are fundamentally different</strong>:</p>
+  <ul class="fancy">
+    <li><strong>Translation</strong>: bidirectional encoding of source + causal generation in target.</li>
+    <li><strong>Speech recognition</strong>: audio encoder + text decoder (Whisper).</li>
+    <li><strong>Summarization</strong>: full-document understanding + condensed generation.</li>
+    <li><strong>Image captioning</strong>: vision encoder + text decoder.</li>
+  </ul>
+  <p>Decoder-only models handle these by concatenating input and output, but encoder-decoder can be more <strong>parameter-efficient</strong> because the two halves specialize. The encoder doesn't need causal masking overhead; the decoder doesn't need to process the full input sequence at every layer.</p>
+</section>
+
+<section id="fieldnotes">
+  <div class="chapter-mark"><span class="num">9</span> Field notes</div>
+  <h2>Number-to-words <em>translation</em></h2>
+  <div class="aside"><div class="label">Source</div><p>Experiments from the <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/08-encoder-decoder/notebook.ipynb">Module 08 notebook</a>. Builds a full encoder-decoder transformer from scratch and trains it on number-to-words translation (e.g., "123" → "one two three").</p></div>
+  <h3>Cross-attention reveals alignment</h3>
+  <p>The star visualization: the cross-attention heatmap between encoder positions (input digits) and decoder positions (output words). For a well-trained model, the heatmap shows a clean <strong>diagonal pattern</strong> — the decoder attends to digit "1" when generating "one," to "2" when generating "two," and so on. The model has learned monotonic left-to-right alignment from data alone, without being told that digits map to words in order.</p>
+  <h3>Head specialization</h3>
+  <p>Different cross-attention heads specialize: some show sharp diagonal alignment (one-to-one mapping), while others attend more broadly (gathering context about sequence length or digit identity from multiple positions). This division of labor emerges naturally from training.</p>
+  <h3>Beam search vs greedy</h3>
+  <p>Beam search ($B=3$) slightly outperforms greedy decoding on this task — it recovers from occasional early mistakes by maintaining alternative hypotheses. The accuracy difference is small (~2%) because the task is simple, but the principle matters for harder tasks like translation where greedy mistakes compound.</p>
+  <h3>Length generalization</h3>
+  <p>Testing on digit sequences longer than those seen in training reveals a generalization gap: the model handles 5-digit numbers perfectly (seen in training) but degrades on 7-digit numbers. This is a known limitation of transformer encoder-decoders — positional encodings and attention patterns don't always extrapolate cleanly beyond training lengths.</p>
+</section>
+
+<section id="playground">
+  <div class="chapter-mark"><span class="num">10</span> Playground</div>
+  <h2>See cross-attention <em>in action</em></h2>
+  <p>A simulated cross-attention heatmap for number-to-words translation. Each cell shows how strongly decoder position $t$ (output word) attends to encoder position $i$ (input digit). Click different examples to see how the alignment pattern changes.</p>
+  <div class="demo" id="ca-demo">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;font-family:'JetBrains Mono',monospace;font-size:11px">
+      <button onclick="setExample(0)">4 7 2</button>
+      <button onclick="setExample(1)">1 5 9 3</button>
+      <button onclick="setExample(2)">8 0 6 2 1</button>
+    </div>
+    <canvas id="ca-canvas" width="500" height="340" style="width:100%;max-width:500px;border:1px solid var(--rule);border-radius:4px;background:#fff;display:block;margin:0 auto"></canvas>
+  </div>
+</section>
+
+<div class="ornament">⁂ ⁂ ⁂</div>
+
+<section id="takeaways">
+  <div class="chapter-mark"><span class="num">11</span> Closing</div>
+  <h2>Takeaways &amp; <em>exercises</em></h2>
+  <ol class="fancy">
+    <li><strong>Encoder-decoder separates understanding from generation</strong> — bidirectional encoder + causal decoder, connected by cross-attention.</li>
+    <li><strong>Cross-attention is the bridge</strong> — Q from decoder, K/V from encoder, learning soft alignment.</li>
+    <li><strong>T5 unified NLP as text-to-text</strong>; BART used denoising pre-training.</li>
+    <li><strong>Decoder-only dominates for general LLMs</strong>, but encoder-decoder remains best for tasks where input and output are fundamentally different.</li>
+    <li><strong>Cross-attention weights are interpretable</strong> — they reveal learned alignment between input and output positions.</li>
+  </ol>
+  <div class="aside check"><div class="label">Exercises</div>
+    <p><strong>1.</strong> Why do queries come from the decoder but keys/values from the encoder? What would happen if you swapped this?</p>
+    <p><strong>2.</strong> Open the notebook. Visualize cross-attention for "54321". Is the alignment diagonal? Which heads show the cleanest alignment?</p>
+    <p><strong>3.</strong> Compare beam search ($B=3$) and greedy decoding accuracy. On which examples does beam search help?</p>
+  </div>
+  <h3>Further reading</h3>
+  <ul class="fancy">
+    <li>Vaswani et al. (2017) — <em>Attention Is All You Need</em>. The original encoder-decoder transformer.</li>
+    <li>Bahdanau et al. (2015) — <em>Attention for neural machine translation</em>.</li>
+    <li>Raffel et al. (2020) — <em>T5</em>. Text-to-text everything.</li>
+    <li>Lewis et al. (2019) — <em>BART</em>. Denoising seq2seq.</li>
+    <li>Radford et al. (2023) — <em>Whisper</em>. Speech encoder-decoder.</li>
+    <li>P. Kulkarni — <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/08-encoder-decoder/notebook.ipynb"><em>Module 08 notebook</em></a>.</li>
+  </ul>
+</section>
+
+<footer>
+  <p style="margin-bottom:14px">All figures are original SVGs. Conceptual structure draws on the companion notes and cited papers.</p>
+  <hr style="border:none;border-top:1px solid var(--rule);margin:24px 0">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+    <div><div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7165;margin-bottom:6px">Author</div><div>Prashant Kulkarni<br><span style="color:#7a7165">with help from Claude Opus (Anthropic)</span></div></div>
+    <div><div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7165;margin-bottom:6px">License</div><div><a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a><br><span style="color:#7a7165">Free to share &amp; adapt for non-commercial use, with attribution.</span></div></div>
+  </div>
+  <p style="margin-top:18px;font-size:11px;color:#7a7165">Part of the <em style="font-family:'Fraunces',serif;font-size:13px">learn-generative-ai</em> tutorial series · Chapter 08 of 10 · v1.0</p>
+</footer>
+</main>
+</div>
+<script>
+"use strict";
+const names=['zero','one','two','three','four','five','six','seven','eight','nine'];
+const examples=[
+  {src:['4','7','2'],tgt:['four','seven','two'],attn:[[.9,.05,.05],[.05,.9,.05],[.05,.05,.9]]},
+  {src:['1','5','9','3'],tgt:['one','five','nine','three'],attn:[[.85,.05,.05,.05],[.05,.85,.05,.05],[.05,.05,.85,.05],[.05,.05,.05,.85]]},
+  {src:['8','0','6','2','1'],tgt:['eight','zero','six','two','one'],attn:[[.8,.05,.05,.05,.05],[.05,.8,.05,.05,.05],[.05,.05,.8,.05,.05],[.05,.05,.05,.8,.05],[.05,.05,.05,.05,.8]]}
+];
+let curEx=0;
+const cc=document.getElementById('ca-canvas');
+const cctx=cc?cc.getContext('2d'):null;
+function drawCA(){
+  if(!cctx)return;const e=examples[curEx];const{src,tgt,attn}=e;
+  const CW=500,CH=340;cctx.clearRect(0,0,CW,CH);
+  const oX=100,oY=60,cW=60,cH=40;
+  // Column headers (encoder/source)
+  cctx.font='bold 11px "JetBrains Mono"';cctx.textAlign='center';
+  cctx.fillStyle='#3a5a72';
+  for(let j=0;j<src.length;j++) cctx.fillText(src[j],oX+j*cW+cW/2,oY-10);
+  cctx.font='9px "JetBrains Mono"';cctx.fillStyle='#7a7165';
+  cctx.fillText('encoder →',oX+src.length*cW/2,oY-30);
+  // Row headers (decoder/target)
+  cctx.font='bold 11px "JetBrains Mono"';cctx.textAlign='right';cctx.fillStyle='#5e7a3a';
+  for(let i=0;i<tgt.length;i++) cctx.fillText(tgt[i],oX-8,oY+i*cH+cH/2+4);
+  cctx.save();cctx.translate(oX-50,oY+tgt.length*cH/2);cctx.rotate(-Math.PI/2);
+  cctx.font='9px "JetBrains Mono"';cctx.textAlign='center';cctx.fillStyle='#7a7165';
+  cctx.fillText('← decoder',0,0);cctx.restore();
+  // Cells
+  for(let i=0;i<tgt.length;i++)for(let j=0;j<src.length;j++){
+    const w=attn[i][j];
+    const r=Math.round(94+(1-w)*160),g=Math.round(122+(1-w)*140),b=Math.round(58+(1-w)*200);
+    cctx.fillStyle=`rgb(${r},${g},${b})`;
+    cctx.fillRect(oX+j*cW,oY+i*cH,cW-2,cH-2);
+    if(w>0.3){cctx.fillStyle='#fff';cctx.font='bold 12px "JetBrains Mono"';cctx.textAlign='center';
+    cctx.fillText((w*100).toFixed(0)+'%',oX+j*cW+cW/2-1,oY+i*cH+cH/2+4)}
+  }
+  // Border
+  cctx.strokeStyle='#d9cfba';cctx.strokeRect(oX,oY,src.length*cW-2,tgt.length*cH-2);
+}
+window.setExample=function(i){curEx=i;drawCA()};
+if(cc)drawCA();
+// TOC
+const sections=document.querySelectorAll('section[id]');const tocLinks=document.querySelectorAll('.toc a');
+const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){tocLinks.forEach(l=>l.style.color='');const a=document.querySelector(`.toc a[href="#${e.target.id}"]`);if(a)a.style.color='var(--accent)'}})},{rootMargin:'-30% 0px -60% 0px'});
+sections.forEach(s=>observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,2174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mixture of Experts — A Tutorial from First Principles</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+
+<style>
+:root{
+  --paper:#f4ede0;
+  --paper-2:#ebe2d0;
+  --card:#fbf6ec;
+  --ink:#1a1814;
+  --ink-2:#3d3830;
+  --ink-3:#7a7165;
+  --rule:#d9cfba;
+  --rust:#b03d1a;
+  --rust-soft:#dba287;
+  --sage:#506348;
+  --gold:#b88528;
+  --highlight:#fde8b4;
+  --shadow: 0 1px 0 rgba(26,24,20,.04), 0 8px 30px -10px rgba(26,24,20,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Newsreader',Georgia,serif;
+  font-size:19px;
+  line-height:1.65;
+  font-weight:380;
+  text-rendering:optimizeLegibility;
+  -webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(184,133,40,.06), transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(80,99,72,.05), transparent 50%);
+  background-attachment:fixed;
+}
+
+/* ---- Layout ---- */
+.shell{
+  max-width:1240px;
+  margin:0 auto;
+  padding:0 32px;
+  display:grid;
+  grid-template-columns: 240px minmax(0,1fr);
+  gap:64px;
+}
+@media (max-width: 980px){
+  .shell{grid-template-columns:1fr;gap:0;padding:0 22px}
+  .toc{display:none}
+}
+
+/* ---- TOC ---- */
+.toc{
+  position:sticky;
+  top:32px;
+  align-self:start;
+  padding:80px 0 0;
+  font-family:'Fraunces',serif;
+  font-size:13px;
+  letter-spacing:.02em;
+  height:calc(100vh - 32px);
+  overflow-y:auto;
+}
+.toc h4{
+  font-family:'Fraunces',serif;
+  font-style:italic;
+  font-weight:500;
+  font-size:13px;
+  color:var(--ink-3);
+  text-transform:uppercase;
+  letter-spacing:.18em;
+  margin-bottom:14px;
+}
+.toc ol{list-style:none;counter-reset:toc}
+.toc li{counter-increment:toc;margin:6px 0;padding-left:28px;position:relative}
+.toc li::before{
+  content: counter(toc, decimal-leading-zero);
+  position:absolute;left:0;top:1px;
+  font-size:11px;color:var(--ink-3);
+  font-variant-numeric:tabular-nums;
+  font-family:'JetBrains Mono',monospace;
+}
+.toc a{
+  color:var(--ink-2);
+  text-decoration:none;
+  border-bottom:1px solid transparent;
+  transition:border .2s, color .2s;
+}
+.toc a:hover{color:var(--rust);border-bottom-color:var(--rust)}
+
+/* ---- Main ---- */
+main{max-width:740px;padding:60px 0 120px}
+
+/* ---- Hero ---- */
+.eyebrow{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--rust);
+  margin-bottom:24px;
+  display:flex;align-items:center;gap:14px;
+}
+.eyebrow::after{
+  content:"";flex:1;height:1px;background:var(--rule);
+}
+h1.title{
+  font-family:'Fraunces',serif;
+  font-weight:300;
+  font-size:clamp(48px,7vw,84px);
+  line-height:.95;
+  letter-spacing:-.02em;
+  margin-bottom:18px;
+  font-variation-settings:"opsz" 144, "SOFT" 50;
+}
+h1.title em{
+  font-style:italic;
+  font-weight:400;
+  color:var(--rust);
+  font-variation-settings:"opsz" 144, "SOFT" 100;
+}
+.subtitle{
+  font-family:'Fraunces',serif;
+  font-style:italic;
+  font-weight:300;
+  font-size:24px;
+  color:var(--ink-2);
+  line-height:1.4;
+  max-width:560px;
+  margin-bottom:36px;
+}
+.byline{
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+  color:var(--ink-3);
+  padding-top:24px;
+  border-top:1px solid var(--rule);
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;
+  margin-bottom:80px;
+}
+.byline a{color:var(--rust);text-decoration:none;border-bottom:1px dotted var(--rust)}
+
+/* ---- Sections ---- */
+section{margin:80px 0;scroll-margin-top:24px}
+.chapter-mark{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+  margin-bottom:6px;
+  display:flex;align-items:center;gap:14px;
+}
+.chapter-mark .num{
+  display:inline-block;
+  width:32px;height:32px;
+  background:var(--ink);color:var(--paper);
+  border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:600;
+}
+h2{
+  font-family:'Fraunces',serif;
+  font-weight:400;
+  font-size:42px;
+  line-height:1.1;
+  letter-spacing:-.015em;
+  margin:14px 0 28px;
+  font-variation-settings:"opsz" 72, "SOFT" 30;
+}
+h2 em{font-style:italic;color:var(--rust);font-weight:300}
+h3{
+  font-family:'Fraunces',serif;
+  font-weight:500;
+  font-style:italic;
+  font-size:24px;
+  margin:40px 0 14px;
+  color:var(--ink);
+}
+p{margin:0 0 18px;hyphens:auto}
+p + p{text-indent:0}
+
+/* ---- First paragraph drop cap on opening section ---- */
+.lede{font-size:22px;line-height:1.55;color:var(--ink-2);font-family:'Fraunces',serif;font-weight:300}
+.lede:first-letter{
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:78px;
+  float:left;
+  line-height:.85;
+  margin:6px 10px 0 -2px;
+  color:var(--rust);
+}
+
+/* ---- Inline emphasis ---- */
+strong{font-weight:600;color:var(--ink)}
+em{font-style:italic}
+.term{
+  font-family:'Fraunces',serif;
+  font-style:italic;
+  font-weight:500;
+  color:var(--rust);
+  border-bottom:1px dotted var(--rust-soft);
+  padding-bottom:1px;
+}
+code, .mono{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.85em;
+  background:var(--paper-2);
+  padding:1px 6px;
+  border-radius:3px;
+  color:var(--ink);
+}
+
+/* ---- Pull quote ---- */
+.pullquote{
+  border-left:3px solid var(--rust);
+  padding:8px 0 8px 24px;
+  margin:32px 0;
+  font-family:'Fraunces',serif;
+  font-style:italic;
+  font-weight:300;
+  font-size:24px;
+  line-height:1.4;
+  color:var(--ink-2);
+}
+
+/* ---- Aside boxes ---- */
+.aside{
+  background:var(--card);
+  border:1px solid var(--rule);
+  border-radius:6px;
+  padding:24px 28px;
+  margin:32px 0;
+  box-shadow:var(--shadow);
+  position:relative;
+}
+.aside .label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.2em;
+  color:var(--rust);
+  margin-bottom:8px;
+}
+.aside.insight{background:linear-gradient(180deg,#fdf3da 0%, #fbf6ec 100%);border-color:var(--gold)}
+.aside.insight .label{color:var(--gold)}
+.aside.warn{background:#fdebe2;border-color:var(--rust-soft)}
+.aside.check{background:#eef0e8;border-color:#bcc4ad}
+.aside.check .label{color:var(--sage)}
+.aside p:last-child{margin-bottom:0}
+
+/* ---- Figures ---- */
+figure{
+  margin:40px -40px;
+  background:var(--card);
+  border:1px solid var(--rule);
+  border-radius:8px;
+  overflow:hidden;
+  box-shadow:var(--shadow);
+}
+@media (max-width:980px){figure{margin:32px 0}}
+figure img{
+  width:100%;
+  height:auto;
+  display:block;
+  background:#fff;
+  padding:20px;
+}
+figcaption{
+  padding:14px 24px 18px;
+  font-family:'Fraunces',serif;
+  font-style:italic;
+  font-size:15px;
+  line-height:1.45;
+  color:var(--ink-2);
+  border-top:1px solid var(--rule);
+}
+figcaption .src{
+  display:block;
+  font-family:'JetBrains Mono',monospace;
+  font-style:normal;
+  font-size:10px;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+  margin-top:6px;
+}
+
+/* ---- Math ---- */
+.math-display{
+  margin:24px 0;
+  padding:18px 24px;
+  background:var(--card);
+  border-left:3px solid var(--gold);
+  border-radius:0 4px 4px 0;
+  font-size:.95em;
+  overflow-x:auto;
+}
+
+/* ---- Lists ---- */
+ul.fancy, ol.fancy{margin:18px 0 24px 0;padding-left:0;list-style:none}
+ul.fancy li, ol.fancy li{
+  position:relative;
+  padding-left:32px;
+  margin-bottom:12px;
+}
+ul.fancy li::before{
+  content:"§";
+  position:absolute;left:0;top:0;
+  color:var(--rust);
+  font-family:'Fraunces',serif;
+  font-style:italic;
+  font-size:1.1em;
+}
+ol.fancy{counter-reset:fancy}
+ol.fancy li{counter-increment:fancy}
+ol.fancy li::before{
+  content: counter(fancy, decimal-leading-zero);
+  position:absolute;left:0;top:3px;
+  color:var(--rust);
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  font-weight:600;
+}
+
+/* ---- Two-column comparison ---- */
+.compare{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+  margin:32px 0;
+}
+@media (max-width:680px){.compare{grid-template-columns:1fr}}
+.compare > div{
+  background:var(--card);
+  padding:22px;
+  border-radius:6px;
+  border-top:3px solid var(--rule);
+}
+.compare .dense{border-top-color:var(--ink)}
+.compare .sparse{border-top-color:var(--rust)}
+.compare h4{
+  font-family:'Fraunces',serif;
+  font-weight:500;
+  font-style:italic;
+  font-size:20px;
+  margin-bottom:10px;
+}
+.compare ul{list-style:none;font-size:16px;line-height:1.55}
+.compare li{padding:4px 0;border-bottom:1px dotted var(--rule)}
+.compare li:last-child{border-bottom:none}
+
+/* ---- Glossary ---- */
+.glossary dt{
+  font-family:'Fraunces',serif;
+  font-style:italic;
+  font-weight:500;
+  font-size:20px;
+  color:var(--rust);
+  margin:18px 0 4px;
+}
+.glossary dd{
+  margin:0 0 8px;
+  font-size:17px;
+  line-height:1.55;
+}
+
+/* ---- Demo ---- */
+.demo{
+  background:var(--card);
+  border:1px solid var(--rule);
+  border-radius:8px;
+  padding:24px;
+  margin:32px 0;
+  box-shadow:var(--shadow);
+}
+.demo input[type="text"]{
+  width:100%;
+  font-family:'Newsreader',serif;
+  font-size:18px;
+  padding:12px 16px;
+  border:1px solid var(--rule);
+  background:#fff;
+  border-radius:4px;
+  margin-bottom:16px;
+  color:var(--ink);
+}
+.demo input[type="text"]:focus{outline:none;border-color:var(--rust)}
+.demo .controls{
+  display:flex;gap:12px;flex-wrap:wrap;align-items:center;
+  margin-bottom:18px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+}
+.demo .controls label{display:flex;align-items:center;gap:6px;color:var(--ink-2)}
+.demo .controls input[type="number"]{
+  width:48px;padding:4px 6px;
+  border:1px solid var(--rule);
+  background:#fff;border-radius:3px;
+  font-family:inherit;text-align:center;
+}
+.demo button{
+  background:var(--ink);color:var(--paper);
+  border:none;padding:8px 16px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  border-radius:3px;cursor:pointer;
+  transition:background .2s;
+}
+.demo button:hover{background:var(--rust)}
+.demo .output{
+  background:#fff;
+  border-radius:4px;
+  padding:18px;
+  min-height:80px;
+  display:flex;flex-wrap:wrap;gap:6px;
+  border:1px solid var(--rule);
+}
+.token{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 11px;
+  border-radius:14px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;
+  font-weight:500;
+  color:#fff;
+  animation:tokenIn .3s ease-out backwards;
+  box-shadow:0 1px 2px rgba(0,0,0,.08);
+}
+.token .arrow{font-size:9px;opacity:.7}
+.token .expert{
+  background:rgba(255,255,255,.25);
+  padding:1px 5px;border-radius:8px;
+  font-size:11px;
+}
+@keyframes tokenIn{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.expert-legend{
+  display:flex;gap:14px;flex-wrap:wrap;
+  margin-top:14px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  color:var(--ink-2);
+}
+.expert-legend .swatch{
+  display:inline-block;width:12px;height:12px;
+  border-radius:50%;margin-right:6px;vertical-align:middle;
+}
+
+/* ---- Footnote / margin notes ---- */
+.note{
+  font-size:15px;
+  color:var(--ink-3);
+  font-style:italic;
+  font-family:'Fraunces',serif;
+  font-weight:300;
+  border-top:1px solid var(--rule);
+  padding-top:12px;
+  margin-top:18px;
+}
+
+/* ---- ASCII diagram ---- */
+pre.diagram{
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;
+  line-height:1.5;
+  background:var(--card);
+  padding:18px 22px;
+  border:1px solid var(--rule);
+  border-radius:6px;
+  overflow-x:auto;
+  margin:24px 0;
+  color:var(--ink-2);
+}
+
+/* ---- Footer ---- */
+footer{
+  margin-top:120px;
+  padding-top:40px;
+  border-top:1px solid var(--rule);
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+  color:var(--ink-3);
+  line-height:1.7;
+}
+footer a{color:var(--rust);text-decoration:none;border-bottom:1px dotted var(--rust)}
+
+/* Decorative ornament */
+.ornament{
+  text-align:center;
+  font-family:'Fraunces',serif;
+  font-style:italic;
+  font-size:32px;
+  color:var(--rust);
+  margin:60px 0 40px;
+  opacity:.5;
+  letter-spacing:.5em;
+}
+
+/* small helpers */
+.small{font-size:14px;color:var(--ink-3)}
+.center{text-align:center}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<!-- ===== TOC ===== -->
+<nav class="toc" aria-label="Table of Contents">
+  <h4>Tutorial</h4>
+  <ol>
+    <li><a href="#intro">The motivation</a></li>
+    <li><a href="#refresher">Where MoE lives in a transformer</a></li>
+    <li><a href="#anatomy">Anatomy of an MoE layer</a></li>
+    <li><a href="#sparsity">Sparsity & conditional computation</a></li>
+    <li><a href="#history">A brief history</a></li>
+    <li><a href="#gating">The gating function</a></li>
+    <li><a href="#balancing">The load-balancing problem</a></li>
+    <li><a href="#switch">GShard & Switch Transformer</a></li>
+    <li><a href="#learn">What do experts actually learn?</a></li>
+    <li><a href="#fieldnotes">Field notes: inside a real MoE</a></li>
+    <li><a href="#finetune">The fine-tuning headache</a></li>
+    <li><a href="#brrr">Making MoE go brrr</a></li>
+    <li><a href="#choose">When to choose MoE</a></li>
+    <li><a href="#playground">Interactive: route some tokens</a></li>
+    <li><a href="#takeaways">Takeaways & exercises</a></li>
+  </ol>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<main>
+
+<header>
+  <div class="eyebrow">A First-Principles Tutorial</div>
+  <h1 class="title">Mixture <em>of</em><br>Experts</h1>
+  <p class="subtitle">How transformers learned to grow vast — by training many specialists, but only consulting a few of them at a time.</p>
+  <div class="byline">
+    <span>By Prashant Kulkarni · with help from Claude Opus</span>
+    <span><a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> · <a href="https://huggingface.co/blog/moe">conceptual scaffold from HF blog</a></span>
+  </div>
+</header>
+
+<!-- ============ 1. INTRO ============ -->
+<section id="intro">
+  <div class="chapter-mark"><span class="num">1</span> The motivation</div>
+  <h2>Why would we ever want <em>more</em> parameters that we don't use?</h2>
+
+  <p class="lede">Here is the central tension of modern deep learning: bigger models are smarter, but bigger models are also slower and more expensive. Every weight in a standard "dense" transformer participates in every computation, for every token, every time. We pay the full price of the model for every input we run through it — even when most of the model probably isn't relevant to the input at hand.</p>
+
+  <p>Think about how a hospital works. If every patient who walked in had to be examined by every doctor on staff — the cardiologist, the dermatologist, the pediatrician — the hospital would grind to a halt within an hour. Real hospitals use a triage nurse: a quick first pass that routes each patient to one or two specialists who actually know about their problem. The rest of the staff continues their work undisturbed.</p>
+
+  <p>A <span class="term">Mixture of Experts</span> applies exactly that idea to a neural network. Instead of one giant feed-forward block that processes every token, we have many smaller specialist blocks (the "experts") and a tiny router network (the "triage nurse") that decides, on a per-token basis, which one or two experts get to weigh in.</p>
+
+  <div class="aside insight">
+    <div class="label">Key insight</div>
+    <p>An MoE model has many <strong>total</strong> parameters but few <strong>active</strong> parameters per token. This decouples model capacity from per-token compute — which is exactly what we wanted to do all along.</p>
+  </div>
+
+  <p>For a concrete number to keep in your head: Mixtral 8×7B has roughly 47 billion total parameters but uses only about 12 billion of them for any given token. It has the knowledge capacity of a much larger model with the inference cost of a much smaller one. The tradeoff is that you still need enough memory to <em>hold</em> all 47B parameters — the experts are still sitting on the GPU, just sitting quietly.</p>
+</section>
+
+<!-- ============ 2. REFRESHER ============ -->
+<section id="refresher">
+  <div class="chapter-mark"><span class="num">2</span> Refresher</div>
+  <h2>Where exactly does MoE <em>live</em> inside a transformer?</h2>
+
+  <p>Before we replace anything, let's be precise about what we're replacing. A standard transformer block has two sublayers:</p>
+
+  <ol class="fancy">
+    <li><strong>Self-attention</strong>, where each token gathers information from the other tokens in the sequence.</li>
+    <li><strong>A feed-forward network (FFN)</strong>, where each token is transformed independently — typically a two-layer MLP that expands the hidden dimension by 4× and then projects back down.</li>
+  </ol>
+
+  <p>The FFN is, perhaps surprisingly, where most of a transformer's parameters live. In a typical model, the FFN holds roughly two-thirds of the weights. It is also the part of the architecture that operates on each token in isolation — there is no information flowing between positions in the FFN, only attention does that.</p>
+
+  <pre class="diagram">
+   ┌─────────────────────────────────────────┐
+   │           Transformer Block             │
+   │                                         │
+   │   ┌────────────────────────────┐        │
+   │   │     Self-Attention         │        │
+   │   └────────────────────────────┘        │
+   │                ↓                        │
+   │   ┌────────────────────────────┐        │
+   │   │      FFN  ◄── we replace   │        │
+   │   │           this with MoE    │        │
+   │   └────────────────────────────┘        │
+   └─────────────────────────────────────────┘</pre>
+
+  <p>So the surgical operation we are about to perform is: <em>swap the FFN for an MoE layer</em>. Attention stays. Layer norms stay. Residual connections stay. Only the per-token feed-forward computation gets replaced by a router-and-experts ensemble.</p>
+
+  <div class="aside">
+    <div class="label">Naming gotcha</div>
+    <p>When people say a model has "8 experts," they usually mean each MoE layer has 8 experts, not that the whole model has 8. And many models alternate — every other layer is an MoE, the layers in between remain ordinary FFNs.</p>
+  </div>
+</section>
+
+<!-- ============ 3. ANATOMY ============ -->
+<section id="anatomy">
+  <div class="chapter-mark"><span class="num">3</span> Anatomy of an MoE layer</div>
+  <h2>A router and a panel of <em>specialists</em></h2>
+
+  <p>An MoE layer has two ingredients:</p>
+
+  <ul class="fancy">
+    <li><strong>Experts.</strong> A set of <em>N</em> small neural networks (in practice, just FFNs with the same shape). Call them $E_1, E_2, \ldots, E_N$.</li>
+    <li><strong>A gate network</strong> (also called the "router"). A tiny network — usually a single linear layer followed by a softmax — that takes a token's hidden state and outputs <em>N</em> weights, one per expert. The weights say "how much should this token use each expert?"</li>
+  </ul>
+
+  <p>Here is the picture from the original Switch Transformer paper. Two tokens — "More" and "Parameters" — arrive at the layer. The router examines each one and dispatches them: "More" goes to expert FFN 2, "Parameters" goes to expert FFN 1. They each travel through their assigned expert and come out the other side as new hidden states.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <defs>
+        <marker id="ar-rust" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#b03d1a"/></marker>
+        <marker id="ar-sage" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#506348"/></marker>
+      </defs>
+      <text x="360" y="24" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">An MoE layer dispatches each token to one expert</text>
+      <!-- column labels -->
+      <text x="80" y="48" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.15em">TOKENS</text>
+      <text x="280" y="48" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.15em">ROUTER</text>
+      <text x="520" y="48" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.15em">EXPERTS</text>
+      <text x="660" y="48" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.15em">OUT</text>
+      <!-- tokens -->
+      <g transform="translate(80,100)"><rect x="-50" y="-16" width="100" height="32" rx="4" fill="#fff" stroke="#b03d1a" stroke-width="1.5"/><text y="5" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="13" fill="#1a1814">More</text></g>
+      <g transform="translate(80,220)"><rect x="-58" y="-16" width="116" height="32" rx="4" fill="#fff" stroke="#506348" stroke-width="1.5"/><text y="5" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="13" fill="#1a1814">Parameters</text></g>
+      <!-- router box -->
+      <rect x="220" y="80" width="120" height="160" rx="6" fill="#fcf8ee" stroke="#b03d1a" stroke-width="1.2"/>
+      <text x="280" y="98" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#b03d1a" font-weight="600" letter-spacing="0.05em">G(x)=softmax(W·x)</text>
+      <!-- mini bar chart for token 1 -->
+      <text x="280" y="118" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">scores · "More"</text>
+      <g transform="translate(244,148)">
+        <rect x="0" y="-2" width="9" height="2" fill="#d9cfba"/>
+        <rect x="11" y="-22" width="9" height="22" fill="#b03d1a"/>
+        <rect x="22" y="-8" width="9" height="8" fill="#d9cfba"/>
+        <rect x="33" y="-4" width="9" height="4" fill="#d9cfba"/>
+        <text x="15.5" y="-26" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#b03d1a" font-weight="600">↑E2</text>
+      </g>
+      <line x1="220" y1="170" x2="340" y2="170" stroke="#e2d8c2" stroke-width="0.5"/>
+      <text x="280" y="186" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">scores · "Parameters"</text>
+      <g transform="translate(244,218)">
+        <rect x="0" y="-22" width="9" height="22" fill="#506348"/>
+        <rect x="11" y="-6" width="9" height="6" fill="#d9cfba"/>
+        <rect x="22" y="-10" width="9" height="10" fill="#d9cfba"/>
+        <rect x="33" y="-3" width="9" height="3" fill="#d9cfba"/>
+        <text x="4.5" y="-26" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#506348" font-weight="600">↑E1</text>
+      </g>
+      <!-- arrows tokens → router -->
+      <line x1="130" y1="100" x2="218" y2="120" stroke="#7a7165" stroke-width="1.2"/>
+      <line x1="138" y1="220" x2="218" y2="200" stroke="#7a7165" stroke-width="1.2"/>
+      <!-- experts -->
+      <g transform="translate(520,90)"><rect x="-44" y="-22" width="88" height="44" rx="4" fill="#506348"/><text y="-2" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">FFN₁</text><text y="13" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.85">expert 1</text></g>
+      <g transform="translate(520,150)"><rect x="-44" y="-22" width="88" height="44" rx="4" fill="#b03d1a"/><text y="-2" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">FFN₂</text><text y="13" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.85">expert 2</text></g>
+      <g transform="translate(520,210)"><rect x="-44" y="-22" width="88" height="44" rx="4" fill="#fff" stroke="#d9cfba" stroke-width="1.5"/><text y="-2" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#b88528">FFN₃</text><text y="13" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">idle</text></g>
+      <g transform="translate(520,270)"><rect x="-44" y="-22" width="88" height="44" rx="4" fill="#fff" stroke="#d9cfba" stroke-width="1.5"/><text y="-2" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#3a5a72">FFN₄</text><text y="13" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">idle</text></g>
+      <!-- routing arrows -->
+      <path d="M 340 130 Q 420 110 472 150" stroke="#b03d1a" stroke-width="2" fill="none" marker-end="url(#ar-rust)"/>
+      <path d="M 340 195 Q 420 130 472 90" stroke="#506348" stroke-width="2" fill="none" marker-end="url(#ar-sage)"/>
+      <path d="M 340 160 Q 410 200 472 210" stroke="#d9cfba" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
+      <path d="M 340 160 Q 410 250 472 270" stroke="#d9cfba" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
+      <!-- outputs -->
+      <g transform="translate(660,90)"><rect x="-26" y="-14" width="52" height="28" rx="4" fill="#fff" stroke="#506348" stroke-width="1.5"/><text y="5" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#506348">y₁</text></g>
+      <g transform="translate(660,150)"><rect x="-26" y="-14" width="52" height="28" rx="4" fill="#fff" stroke="#b03d1a" stroke-width="1.5"/><text y="5" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#b03d1a">y₂</text></g>
+      <line x1="564" y1="90" x2="632" y2="90" stroke="#506348" stroke-width="1.5"/>
+      <line x1="564" y1="150" x2="632" y2="150" stroke="#b03d1a" stroke-width="1.5"/>
+    </svg>
+    <figcaption>
+      Two tokens enter an MoE layer. The router emits a score for every expert (the small bar charts inside the router box show the per-token logits); only the top-scoring expert actually runs. "More" is dispatched to FFN₂; "Parameters" to FFN₁. The remaining experts stay idle.
+      <span class="src">Original SVG · Concept after Fedus et al. (2021), <em>Switch Transformer</em></span>
+    </figcaption>
+  </figure>
+
+  <p>That is genuinely the whole concept. The router is small and cheap; the experts are where the parameter count lives; and on any given forward pass, most experts are idle. The experts can be thought of as parallel candidate FFNs, and the router as the network's own learned scheduler.</p>
+
+  <p>Mathematically, if the router produces gating weights $G(x)_i$ for each expert $i$, the layer's output for input $x$ is:</p>
+
+  <div class="math-display">$$y \;=\; \sum_{i=1}^{N} G(x)_i \cdot E_i(x)$$</div>
+
+  <p>This looks like a weighted ensemble — we run every expert and combine their outputs by the router's weights. <em>If we did that, we'd save no compute at all.</em> The trick comes next.</p>
+</section>
+
+<!-- ============ 4. SPARSITY ============ -->
+<section id="sparsity">
+  <div class="chapter-mark"><span class="num">4</span> Sparsity</div>
+  <h2>The whole point: <em>most</em> $G(x)_i$ are zero</h2>
+
+  <p>Look at the formula again. If $G(x)_i = 0$ for some expert $i$, then that term contributes nothing to the sum, and we have no reason to actually run $E_i(x)$. We can simply skip the multiplication. This is called <span class="term">conditional computation</span>: parts of the network become active or inactive depending on the input.</p>
+
+  <div class="pullquote">"All the experts are still in the building. We're just not asking them to look at this particular patient."</div>
+
+  <p>The standard recipe is <span class="term">top-k routing</span>: the router computes a score for each expert, then we keep only the top $k$ scores (say $k=2$) and zero out the rest. We renormalize and run only those $k$ experts. With $N=8$ experts and $k=2$, we activate 25% of our experts per token — but during training those experts also get specialized, because the router learns to send each token to experts that handle it well.</p>
+
+  <p>This is why sparsity matters so much:</p>
+
+  <ul class="fancy">
+    <li>Total parameters: $N \times$ (size of one expert) — large.</li>
+    <li>Active parameters per token: $k \times$ (size of one expert) — much smaller.</li>
+    <li>Compute (FLOPs) per token: scales with $k$, not $N$. Doubling $N$ doesn't double the compute.</li>
+  </ul>
+
+  <p>You get the modeling capacity of a huge network at the inference cost of a small one. The catch — and there are several — is that all $N$ experts must still be loaded into memory, because <em>any token might need any expert</em>. Sparse compute, dense memory.</p>
+
+  <div class="aside warn">
+    <div class="label">Common confusion</div>
+    <p>"Mixtral 8×7B has 56 billion parameters." — No. It has about 47B. Only the FFN layers are split into 8 experts; the attention layers and embeddings are shared, not duplicated. And for any single token's inference, only ~12B of those 47B actually do work.</p>
+  </div>
+</section>
+
+<!-- ============ 5. HISTORY ============ -->
+<section id="history">
+  <div class="chapter-mark"><span class="num">5</span> Origins</div>
+  <h2>Where the idea <em>came from</em></h2>
+
+  <p>The MoE idea is older than the transformer by nearly three decades. It first appeared in a 1991 paper by Jacobs, Jordan, Nowlan, and Hinton — <em>Adaptive Mixtures of Local Experts</em>. The original setup was much like what we just described, except in the language of small neural networks doing supervised classification: a gating network, several expert networks, and a learned routing rule. Each expert specializes in a region of input space; the gate decides which region the input is in.</p>
+
+  <p>Two threads of research kept the idea alive in the 2010s:</p>
+
+  <ul class="fancy">
+    <li><strong>Experts as components, not whole models.</strong> Eigen, Ranzato, and Sutskever (2013) showed that MoE could be a <em>layer</em> inside a deep network, not the whole architecture — a precondition for everything that followed.</li>
+    <li><strong>Conditional computation.</strong> Bengio and collaborators argued that activating only parts of a network on a per-input basis was the natural way to scale models without scaling compute.</li>
+  </ul>
+
+  <p>The breakthrough for modern NLP came in 2017 with Shazeer et al.'s "Outrageously Large Neural Networks." They wedged an MoE layer between LSTM layers and trained a 137-billion-parameter translation model, which was enormous for the time. This is the figure they used:</p>
+
+  <figure>
+    <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <!-- LSTM bottom -->
+      <rect x="120" y="300" width="480" height="36" rx="4" fill="#fcf8ee" stroke="#7a7165" stroke-width="1"/>
+      <text x="360" y="323" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#3d3830" letter-spacing="0.05em">LSTM layer (input)</text>
+      <!-- LSTM top -->
+      <rect x="120" y="24" width="480" height="36" rx="4" fill="#fcf8ee" stroke="#7a7165" stroke-width="1"/>
+      <text x="360" y="47" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#3d3830" letter-spacing="0.05em">LSTM layer (output)</text>
+      <!-- Title -->
+      <text x="360" y="14" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Sparsely-gated MoE between two LSTMs · Shazeer et al. (2017)</text>
+      <!-- Gating network on left -->
+      <g transform="translate(160, 180)">
+        <rect x="-50" y="-30" width="100" height="60" rx="4" fill="#fff" stroke="#b03d1a" stroke-width="1.5"/>
+        <text y="-10" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#b03d1a" font-weight="600">G(x)</text>
+        <text y="6" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">noisy</text>
+        <text y="20" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">top-k gate</text>
+      </g>
+      <!-- Experts in middle -->
+      <g transform="translate(280, 180)">
+        <rect x="-30" y="-22" width="60" height="44" rx="4" fill="#fff" stroke="#d9cfba" stroke-width="1.5"/>
+        <text y="-2" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#7a7165">E₁</text>
+        <text y="13" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">idle</text>
+      </g>
+      <g transform="translate(360, 180)">
+        <rect x="-30" y="-22" width="60" height="44" rx="4" fill="#b03d1a"/>
+        <text y="-2" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">E₂</text>
+        <text y="13" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.85">active</text>
+      </g>
+      <g transform="translate(440, 180)">
+        <rect x="-30" y="-22" width="60" height="44" rx="4" fill="#fff" stroke="#d9cfba" stroke-width="1.5"/>
+        <text y="-2" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#7a7165">E₃</text>
+        <text y="13" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">idle</text>
+      </g>
+      <g transform="translate(520, 180)">
+        <rect x="-30" y="-22" width="60" height="44" rx="4" fill="#506348"/>
+        <text y="-2" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">E₄</text>
+        <text y="13" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.85">active</text>
+      </g>
+      <g transform="translate(600, 180)">
+        <rect x="-30" y="-22" width="60" height="44" rx="4" fill="#fff" stroke="#d9cfba" stroke-width="1.5"/>
+        <text y="-2" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#7a7165">E₅</text>
+        <text y="13" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">idle</text>
+      </g>
+      <!-- arrows from LSTM up to layer -->
+      <line x1="360" y1="300" x2="360" y2="220" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-rust)"/>
+      <!-- gate to experts (active solid, idle dashed) -->
+      <line x1="210" y1="180" x2="248" y2="180" stroke="#7a7165" stroke-width="1.2" marker-end="url(#ar-rust)"/>
+      <path d="M 210 175 Q 245 130 332 165" stroke="#b03d1a" stroke-width="1.8" fill="none" stroke-dasharray="0"/>
+      <path d="M 210 185 Q 250 220 412 165" stroke="#506348" stroke-width="1.8" fill="none"/>
+      <path d="M 210 175 Q 240 110 252 158" stroke="#d9cfba" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
+      <path d="M 210 185 Q 250 240 412 200" stroke="#d9cfba" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
+      <path d="M 210 185 Q 290 240 572 200" stroke="#d9cfba" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
+      <!-- combine and arrow up -->
+      <circle cx="400" cy="120" r="14" fill="#fff" stroke="#3d3830" stroke-width="1.2"/>
+      <text x="400" y="124" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="14" fill="#3d3830">Σ</text>
+      <line x1="360" y1="158" x2="392" y2="128" stroke="#b03d1a" stroke-width="1.5"/>
+      <line x1="520" y1="158" x2="408" y2="128" stroke="#506348" stroke-width="1.5"/>
+      <line x1="400" y1="106" x2="400" y2="62" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-rust)"/>
+      <!-- legend -->
+      <g transform="translate(40, 270)">
+        <rect x="0" y="0" width="14" height="10" fill="#b03d1a"/>
+        <text x="20" y="9" font-family="JetBrains Mono,monospace" font-size="9" fill="#3d3830">selected by gate</text>
+        <rect x="0" y="18" width="14" height="10" fill="#fff" stroke="#d9cfba"/>
+        <text x="20" y="27" font-family="JetBrains Mono,monospace" font-size="9" fill="#3d3830">idle expert</text>
+      </g>
+    </svg>
+    <figcaption>
+      An MoE layer wedged between two LSTM layers. The gating network <code>G(x)</code> emits a sparse vector — the noisy top-<em>k</em> selector keeps only the highest-scoring few. Selected experts (here E₂ and E₄) run; the rest contribute nothing for this input.
+      <span class="src">Original SVG · Concept after Shazeer et al. (2017), <em>Outrageously Large Neural Networks</em></span>
+    </figcaption>
+  </figure>
+
+  <p>They demonstrated for the first time that sparsely-gated MoEs could be trained at large scale on a real NLP task, and they introduced two techniques we still use today: noisy top-k routing, and an auxiliary load-balancing loss. We will get to both shortly.</p>
+</section>
+
+<!-- ============ 6. GATING ============ -->
+<section id="gating">
+  <div class="chapter-mark"><span class="num">6</span> The gate</div>
+  <h2>How does the router actually <em>decide</em>?</h2>
+
+  <p>The simplest possible router is a single matrix. Take the token's hidden state $x$, multiply by a learned weight matrix $W_g$, apply softmax:</p>
+
+  <div class="math-display">$$G_\sigma(x) \;=\; \mathrm{softmax}(x \cdot W_g)$$</div>
+
+  <p>This gives a probability distribution over experts. We could just sample from it, or take the argmax, or take the top-k. In practice we want the routing to be a learned, gradient-friendly choice — we want to backpropagate through it — so we typically combine top-k with renormalization.</p>
+
+  <h3>Noisy top-k gating</h3>
+
+  <p>Shazeer's recipe adds two refinements. First, inject Gaussian noise into the gating logits before selecting top-k. Second, scale that noise by another learned linear projection of $x$, so the model can decide how confident vs. exploratory it wants to be per token. The whole thing looks like this:</p>
+
+  <div class="math-display">$$H(x)_i \;=\; (x \cdot W_g)_i \;+\; \mathcal{N}(0,1) \cdot \mathrm{softplus}\big((x \cdot W_{\text{noise}})_i\big)$$</div>
+
+  <div class="math-display">$$\mathrm{KeepTopK}(v, k)_i \;=\; \begin{cases} v_i & \text{if } v_i \text{ is among the top } k \text{ entries} \\ -\infty & \text{otherwise} \end{cases}$$</div>
+
+  <div class="math-display">$$G(x) \;=\; \mathrm{softmax}\big(\mathrm{KeepTopK}(H(x), k)\big)$$</div>
+
+  <p>Setting all non-top-k entries to $-\infty$ before the softmax guarantees they come out as exactly zero — clean sparsity, no rounding issues.</p>
+
+  <div class="aside check">
+    <div class="label">Why add noise?</div>
+    <p>Two reasons. First, exploration: without noise, early in training the router will lock onto whichever expert it happens to score slightly higher, and never give the others a chance. Second, load balancing: noise gently redistributes traffic across experts, which leads us to our next problem.</p>
+  </div>
+
+  <h3>Why $k > 1$, historically?</h3>
+
+  <p>Early MoEs always used $k \geq 2$. The reasoning was subtle but important: if you only ever pick one expert, the gradient signal flowing back through the gate is weak and unstable. By picking two and combining their outputs with weights, you get a real signal about <em>how much</em> each expert contributed to a good prediction. As we'll see, the Switch Transformer eventually challenged this and got away with $k=1$, but only with careful tricks.</p>
+</section>
+
+<!-- ============ 7. BALANCING ============ -->
+<section id="balancing">
+  <div class="chapter-mark"><span class="num">7</span> Load balancing</div>
+  <h2>The router has a <em>"rich get richer"</em> problem</h2>
+
+  <p>Here is the failure mode that kept MoE research stuck for years. Imagine you start training with random weights. By pure chance, the router slightly prefers expert 3 for a few inputs. Expert 3 thus gets more training data, and improves faster than the others. The router notices expert 3 is doing well, and routes <em>even more</em> tokens to it. The other experts starve, never improving, never getting traffic. You end up with one bloated expert and seven dead ones — effectively a dense FFN with a confusing wrapper.</p>
+
+  <div class="pullquote">If you don't actively prevent it, the gate collapses to using one or two experts forever. The whole capacity advantage evaporates.</div>
+
+  <p>Two ideas, used in combination, fix this:</p>
+
+  <ol class="fancy">
+    <li><strong>Auxiliary load-balancing loss.</strong> Add an extra term to the training objective that penalizes uneven token-to-expert distributions. The model's main task and the auxiliary load-balance task are optimized together. Get the routing balanced or pay a price.</li>
+    <li><strong>Expert capacity.</strong> Set a hard cap on how many tokens any single expert is allowed to process per batch. If expert 3 fills up, additional tokens that wanted expert 3 are <em>overflowed</em> — passed forward through the residual connection unchanged, or routed to a backup expert, or in some implementations dropped entirely.</li>
+  </ol>
+
+  <p>Why is the capacity cap necessary in addition to the loss? Because GPU tensors have static shapes. We need to allocate, in advance, a fixed amount of buffer space per expert. If we don't cap, we don't know how much memory to set aside. The capacity factor formula will appear shortly when we get to Switch Transformers.</p>
+
+  <div class="aside">
+    <div class="label">In transformers</div>
+    <p>If you use a Hugging Face MoE model, the auxiliary load-balance loss is exposed as the <code>aux_loss</code> output. During fine-tuning, you choose whether to keep it, weight it, or turn it off entirely.</p>
+  </div>
+</section>
+
+<!-- ============ 8. SWITCH ============ -->
+<section id="switch">
+  <div class="chapter-mark"><span class="num">8</span> Two milestone architectures</div>
+  <h2>GShard, then Switch <em>simplifies</em></h2>
+
+  <p>The first transformer-based MoEs at really large scale were Google's GShard (2020) and Switch Transformer (2021). They each made a different design choice that's worth understanding.</p>
+
+  <h3>GShard — every other FFN, top-2 routing</h3>
+
+  <p>GShard scaled transformers past 600 billion parameters. The recipe: replace every <em>other</em> FFN layer with an MoE layer (so attention layers and half the FFN layers stay shared and dense), and use top-2 routing. They also added two refinements: <em>random routing</em> (the second expert is sampled with probability proportional to its weight, rather than always the deterministic runner-up), and <em>expert capacity</em> with overflow.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="18" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">GShard: MoE every other layer, experts sharded across devices</text>
+      <!-- Three device columns -->
+      <g font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.1em">
+        <text x="180" y="38" text-anchor="middle">DEVICE 1</text>
+        <text x="360" y="38" text-anchor="middle">DEVICE 2</text>
+        <text x="540" y="38" text-anchor="middle">DEVICE 3</text>
+      </g>
+      <!-- Vertical device dividers -->
+      <line x1="270" y1="48" x2="270" y2="350" stroke="#e2d8c2" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="450" y1="48" x2="450" y2="350" stroke="#e2d8c2" stroke-width="1" stroke-dasharray="3,3"/>
+      <!-- Layer rows from bottom up -->
+      <!-- Row 1: attention (shared) -->
+      <g transform="translate(0,310)">
+        <rect x="100" y="0" width="160" height="30" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+        <rect x="280" y="0" width="160" height="30" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+        <rect x="460" y="0" width="160" height="30" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+        <text x="180" y="19" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">attention</text>
+        <text x="360" y="19" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">attention</text>
+        <text x="540" y="19" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">attention</text>
+      </g>
+      <!-- Row 2: dense FFN (shared) -->
+      <g transform="translate(0,260)">
+        <rect x="100" y="0" width="160" height="30" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+        <rect x="280" y="0" width="160" height="30" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+        <rect x="460" y="0" width="160" height="30" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+        <text x="180" y="19" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">dense FFN</text>
+        <text x="360" y="19" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">dense FFN</text>
+        <text x="540" y="19" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">dense FFN</text>
+      </g>
+      <!-- Row 3: MoE FFN (split: each device holds different experts) -->
+      <g transform="translate(0,200)">
+        <rect x="100" y="0" width="160" height="42" rx="3" fill="#fdf3da" stroke="#b03d1a" stroke-width="1.5"/>
+        <rect x="280" y="0" width="160" height="42" rx="3" fill="#fdf3da" stroke="#b03d1a" stroke-width="1.5"/>
+        <rect x="460" y="0" width="160" height="42" rx="3" fill="#fdf3da" stroke="#b03d1a" stroke-width="1.5"/>
+        <text x="180" y="14" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a" font-weight="600" letter-spacing="0.1em">MOE LAYER</text>
+        <text x="360" y="14" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a" font-weight="600" letter-spacing="0.1em">MOE LAYER</text>
+        <text x="540" y="14" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a" font-weight="600" letter-spacing="0.1em">MOE LAYER</text>
+        <!-- experts per device -->
+        <g font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">
+          <rect x="116" y="22" width="32" height="14" rx="2" fill="#b03d1a"/><text x="132" y="33" text-anchor="middle">E1</text>
+          <rect x="156" y="22" width="32" height="14" rx="2" fill="#506348"/><text x="172" y="33" text-anchor="middle">E2</text>
+          <rect x="196" y="22" width="32" height="14" rx="2" fill="#b88528"/><text x="212" y="33" text-anchor="middle">E3</text>
+          <rect x="296" y="22" width="32" height="14" rx="2" fill="#3a5a72"/><text x="312" y="33" text-anchor="middle">E4</text>
+          <rect x="336" y="22" width="32" height="14" rx="2" fill="#8a3a5e"/><text x="352" y="33" text-anchor="middle">E5</text>
+          <rect x="376" y="22" width="32" height="14" rx="2" fill="#5e7a3a"/><text x="392" y="33" text-anchor="middle">E6</text>
+          <rect x="476" y="22" width="32" height="14" rx="2" fill="#7a3a8a"/><text x="492" y="33" text-anchor="middle">E7</text>
+          <rect x="516" y="22" width="32" height="14" rx="2" fill="#3a8a7a"/><text x="532" y="33" text-anchor="middle">E8</text>
+          <rect x="556" y="22" width="32" height="14" rx="2" fill="#a55a2a"/><text x="572" y="33" text-anchor="middle">E9</text>
+        </g>
+      </g>
+      <!-- Row 4: attention (shared) -->
+      <g transform="translate(0,150)">
+        <rect x="100" y="0" width="160" height="30" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+        <rect x="280" y="0" width="160" height="30" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+        <rect x="460" y="0" width="160" height="30" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+        <text x="180" y="19" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">attention</text>
+        <text x="360" y="19" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">attention</text>
+        <text x="540" y="19" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">attention</text>
+      </g>
+      <!-- Row 5: another MoE layer -->
+      <g transform="translate(0,90)">
+        <rect x="100" y="0" width="160" height="42" rx="3" fill="#fdf3da" stroke="#b03d1a" stroke-width="1.5"/>
+        <rect x="280" y="0" width="160" height="42" rx="3" fill="#fdf3da" stroke="#b03d1a" stroke-width="1.5"/>
+        <rect x="460" y="0" width="160" height="42" rx="3" fill="#fdf3da" stroke="#b03d1a" stroke-width="1.5"/>
+        <text x="180" y="14" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a" font-weight="600" letter-spacing="0.1em">MOE LAYER</text>
+        <text x="360" y="14" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a" font-weight="600" letter-spacing="0.1em">MOE LAYER</text>
+        <text x="540" y="14" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a" font-weight="600" letter-spacing="0.1em">MOE LAYER</text>
+        <g font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">
+          <rect x="116" y="22" width="32" height="14" rx="2" fill="#b03d1a"/><text x="132" y="33" text-anchor="middle">E1</text>
+          <rect x="156" y="22" width="32" height="14" rx="2" fill="#506348"/><text x="172" y="33" text-anchor="middle">E2</text>
+          <rect x="196" y="22" width="32" height="14" rx="2" fill="#b88528"/><text x="212" y="33" text-anchor="middle">E3</text>
+          <rect x="296" y="22" width="32" height="14" rx="2" fill="#3a5a72"/><text x="312" y="33" text-anchor="middle">E4</text>
+          <rect x="336" y="22" width="32" height="14" rx="2" fill="#8a3a5e"/><text x="352" y="33" text-anchor="middle">E5</text>
+          <rect x="376" y="22" width="32" height="14" rx="2" fill="#5e7a3a"/><text x="392" y="33" text-anchor="middle">E6</text>
+          <rect x="476" y="22" width="32" height="14" rx="2" fill="#7a3a8a"/><text x="492" y="33" text-anchor="middle">E7</text>
+          <rect x="516" y="22" width="32" height="14" rx="2" fill="#3a8a7a"/><text x="532" y="33" text-anchor="middle">E8</text>
+          <rect x="556" y="22" width="32" height="14" rx="2" fill="#a55a2a"/><text x="572" y="33" text-anchor="middle">E9</text>
+        </g>
+      </g>
+      <!-- legend -->
+      <g transform="translate(20, 130)" font-family="JetBrains Mono,monospace" font-size="9" fill="#3d3830">
+        <text x="0" y="0" text-anchor="start">replicated</text>
+        <text x="0" y="14" text-anchor="start">across all</text>
+        <text x="0" y="28" text-anchor="start">devices</text>
+        <line x1="60" y1="-3" x2="100" y2="-3" stroke="#7a7165" stroke-width="1"/>
+      </g>
+      <g transform="translate(20, 220)" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a">
+        <text x="0" y="0" text-anchor="start">experts</text>
+        <text x="0" y="14" text-anchor="start">sharded:</text>
+        <text x="0" y="28" text-anchor="start">3 per device</text>
+        <line x1="65" y1="-3" x2="100" y2="-3" stroke="#b03d1a" stroke-width="1.5"/>
+      </g>
+    </svg>
+    <figcaption>
+      GShard's transformer encoder: an MoE layer replaces every other FFN. Attention sublayers and the dense FFN layers are <em>replicated</em> on every device; the MoE experts are <em>sharded</em> — different experts live on different devices, so each device only stores its own slice of the expert pool. Token routing requires inter-device communication (the all-to-all step).
+      <span class="src">Original SVG · Concept after Lepikhin et al. (2020), <em>GShard</em></span>
+    </figcaption>
+  </figure>
+
+  <h3>Switch Transformer — top-1 is enough</h3>
+
+  <p>The Switch Transformer paper made a heretical move: drop $k$ all the way to 1. Each token goes to <em>exactly one</em> expert. This had been considered too aggressive — the gradient signal would be too weak — but Switch made it work, and the simplification paid for itself:</p>
+
+  <ul class="fancy">
+    <li>The router is half as expensive (only one expert is selected).</li>
+    <li>Each expert's batch is at least twice as large (no token is split between two experts), which is good for hardware utilization.</li>
+    <li>Communication cost between machines drops, since each token's hidden state only needs to travel to one expert.</li>
+  </ul>
+
+  <p>Quality, remarkably, was preserved. The headline result: a 4× pretraining speedup over T5-XXL at the same model size budget.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Switch Transformer: top-1 routing — each token to exactly one expert</text>
+      <!-- column labels -->
+      <text x="80" y="48" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.15em">TOKENS</text>
+      <text x="320" y="48" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.15em">SWITCH ROUTER</text>
+      <text x="560" y="48" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.15em">EXPERTS · TOP 1</text>
+      <!-- tokens -->
+      <g transform="translate(80,100)"><rect x="-50" y="-16" width="100" height="32" rx="4" fill="#fff" stroke="#b03d1a" stroke-width="1.5"/><text y="5" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="13" fill="#1a1814">More</text></g>
+      <g transform="translate(80,220)"><rect x="-58" y="-16" width="116" height="32" rx="4" fill="#fff" stroke="#506348" stroke-width="1.5"/><text y="5" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="13" fill="#1a1814">Parameters</text></g>
+      <!-- router box -->
+      <rect x="240" y="80" width="160" height="160" rx="6" fill="#fcf8ee" stroke="#b03d1a" stroke-width="1.2"/>
+      <text x="320" y="100" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#b03d1a" font-weight="600">argmax G(x)</text>
+      <!-- token 1 routing inside router -->
+      <text x="320" y="120" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">"More" → E2 only</text>
+      <g transform="translate(264,148)">
+        <rect x="0" y="-3" width="12" height="3" fill="#d9cfba"/>
+        <rect x="14" y="-22" width="12" height="22" fill="#b03d1a"/>
+        <rect x="28" y="-7" width="12" height="7" fill="#d9cfba"/>
+        <rect x="42" y="-2" width="12" height="2" fill="#d9cfba"/>
+        <text x="6" y="14" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#7a7165">E1</text>
+        <text x="20" y="14" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#b03d1a" font-weight="600">E2</text>
+        <text x="34" y="14" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#7a7165">E3</text>
+        <text x="48" y="14" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#7a7165">E4</text>
+      </g>
+      <line x1="240" y1="178" x2="400" y2="178" stroke="#e2d8c2" stroke-width="0.5"/>
+      <text x="320" y="194" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">"Parameters" → E1 only</text>
+      <g transform="translate(264,222)">
+        <rect x="0" y="-22" width="12" height="22" fill="#506348"/>
+        <rect x="14" y="-6" width="12" height="6" fill="#d9cfba"/>
+        <rect x="28" y="-9" width="12" height="9" fill="#d9cfba"/>
+        <rect x="42" y="-4" width="12" height="4" fill="#d9cfba"/>
+        <text x="6" y="14" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#506348" font-weight="600">E1</text>
+        <text x="20" y="14" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#7a7165">E2</text>
+        <text x="34" y="14" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#7a7165">E3</text>
+        <text x="48" y="14" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#7a7165">E4</text>
+      </g>
+      <!-- arrows tokens → router -->
+      <line x1="130" y1="100" x2="238" y2="120" stroke="#7a7165" stroke-width="1.2"/>
+      <line x1="138" y1="220" x2="238" y2="200" stroke="#7a7165" stroke-width="1.2"/>
+      <!-- experts on right -->
+      <g transform="translate(560,80)"><rect x="-44" y="-22" width="88" height="44" rx="4" fill="#506348"/><text y="-2" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">FFN₁</text><text y="13" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.85">on for "Parameters"</text></g>
+      <g transform="translate(560,140)"><rect x="-44" y="-22" width="88" height="44" rx="4" fill="#b03d1a"/><text y="-2" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">FFN₂</text><text y="13" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.85">on for "More"</text></g>
+      <g transform="translate(560,200)"><rect x="-44" y="-22" width="88" height="44" rx="4" fill="#fff" stroke="#d9cfba" stroke-width="1.5"/><text y="-2" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#b88528">FFN₃</text><text y="13" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">idle</text></g>
+      <g transform="translate(560,260)"><rect x="-44" y="-22" width="88" height="44" rx="4" fill="#fff" stroke="#d9cfba" stroke-width="1.5"/><text y="-2" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#3a5a72">FFN₄</text><text y="13" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">idle</text></g>
+      <!-- single arrows from router to selected expert (only one each) -->
+      <path d="M 400 130 Q 470 130 512 140" stroke="#b03d1a" stroke-width="2" fill="none" marker-end="url(#ar-rust)"/>
+      <path d="M 400 200 Q 470 130 512 80" stroke="#506348" stroke-width="2" fill="none" marker-end="url(#ar-sage)"/>
+      <!-- summary box -->
+      <g transform="translate(80, 270)">
+        <rect x="0" y="0" width="560" height="34" rx="4" fill="#fdf3da" stroke="#b88528" stroke-width="1"/>
+        <text x="280" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">k = 1: simpler router · larger per-expert batches · less inter-device communication</text>
+      </g>
+    </svg>
+    <figcaption>
+      A single Switch Transformer layer with four experts. Each token's router score peaks for one expert and only that expert runs. Compared to top-2, the router does half the work, each expert receives a fatter batch, and the all-to-all communication step is roughly halved.
+      <span class="src">Original SVG · Concept after Fedus et al. (2021), <em>Switch Transformer</em></span>
+    </figcaption>
+  </figure>
+
+  <h3>The capacity factor formula</h3>
+
+  <p>Switch made the capacity formula explicit and tunable:</p>
+
+  <div class="math-display">$$\text{Expert Capacity} \;=\; \left( \frac{\text{tokens per batch}}{\text{number of experts}} \right) \times \text{capacity factor}$$</div>
+
+  <p>If routing were perfectly uniform, every expert would receive exactly <em>tokens / N</em> tokens per batch. The capacity factor (typically 1.0 to 1.25) is a buffer on top of that ideal — slack that absorbs natural unevenness in routing. Higher capacity factor means fewer dropped tokens but more memory and more inter-device communication. Lower capacity factor means tighter packing but more overflow. A common sweet spot for Switch is 1.25 in training.</p>
+
+  <h3>Selective precision</h3>
+
+  <p>One more Switch trick worth knowing: train the experts in <code>bfloat16</code> (half precision) but keep the <em>router</em> in full precision. The router has a softmax with exponentials, and exponentials magnify roundoff error. Precision-mixing here was a stability win at no quality cost:</p>
+
+  <figure>
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Selective precision: keep router in float32, run experts in bfloat16</text>
+      <!-- header -->
+      <g font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165" letter-spacing="0.1em">
+        <text x="200" y="62" text-anchor="middle">PRECISION STRATEGY</text>
+        <text x="430" y="62" text-anchor="middle">QUALITY</text>
+        <text x="600" y="62" text-anchor="middle">SPEED</text>
+      </g>
+      <line x1="60" y1="74" x2="660" y2="74" stroke="#7a7165" stroke-width="1"/>
+      <!-- row 1: all float32 -->
+      <g transform="translate(0,108)">
+        <text x="80" y="0" font-family="JetBrains Mono,monospace" font-size="11" fill="#3d3830" font-weight="600">all fp32</text>
+        <text x="80" y="14" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">slow but clean</text>
+        <!-- quality bar -->
+        <rect x="370" y="-10" width="120" height="14" rx="7" fill="#ebe2d0"/>
+        <rect x="370" y="-10" width="120" height="14" rx="7" fill="#506348"/>
+        <text x="500" y="2" font-family="JetBrains Mono,monospace" font-size="10" fill="#506348">100%</text>
+        <!-- speed bar -->
+        <rect x="540" y="-10" width="120" height="14" rx="7" fill="#ebe2d0"/>
+        <rect x="540" y="-10" width="48" height="14" rx="7" fill="#b03d1a"/>
+        <text x="668" y="2" font-family="JetBrains Mono,monospace" font-size="10" fill="#b03d1a">slow</text>
+      </g>
+      <line x1="60" y1="130" x2="660" y2="130" stroke="#e2d8c2" stroke-width="0.5"/>
+      <!-- row 2: all bf16 -->
+      <g transform="translate(0,166)">
+        <text x="80" y="0" font-family="JetBrains Mono,monospace" font-size="11" fill="#3d3830" font-weight="600">all bf16</text>
+        <text x="80" y="14" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">fast but unstable</text>
+        <rect x="370" y="-10" width="120" height="14" rx="7" fill="#ebe2d0"/>
+        <rect x="370" y="-10" width="76" height="14" rx="7" fill="#b03d1a"/>
+        <text x="500" y="2" font-family="JetBrains Mono,monospace" font-size="10" fill="#b03d1a">drops</text>
+        <rect x="540" y="-10" width="120" height="14" rx="7" fill="#ebe2d0"/>
+        <rect x="540" y="-10" width="116" height="14" rx="7" fill="#506348"/>
+        <text x="668" y="2" font-family="JetBrains Mono,monospace" font-size="10" fill="#506348">fast</text>
+      </g>
+      <line x1="60" y1="188" x2="660" y2="188" stroke="#e2d8c2" stroke-width="0.5"/>
+      <!-- row 3: selective fp32 router -->
+      <g transform="translate(0,224)">
+        <text x="80" y="0" font-family="JetBrains Mono,monospace" font-size="11" fill="#b03d1a" font-weight="600">router fp32, experts bf16</text>
+        <text x="80" y="14" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#3d3830">the Switch recipe</text>
+        <rect x="370" y="-10" width="120" height="14" rx="7" fill="#ebe2d0"/>
+        <rect x="370" y="-10" width="118" height="14" rx="7" fill="#506348"/>
+        <text x="500" y="2" font-family="JetBrains Mono,monospace" font-size="10" fill="#506348">~100%</text>
+        <rect x="540" y="-10" width="120" height="14" rx="7" fill="#ebe2d0"/>
+        <rect x="540" y="-10" width="112" height="14" rx="7" fill="#506348"/>
+        <text x="668" y="2" font-family="JetBrains Mono,monospace" font-size="10" fill="#506348">fast</text>
+      </g>
+      <text x="80" y="266" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">↳ best of both: only the small router pays the precision tax, where it matters for the softmax</text>
+    </svg>
+    <figcaption>
+      The Switch Transformer's precision recipe. Pure half-precision is fast but the router's softmax produces numerical instability; pure full-precision is stable but slow. Keeping <em>only</em> the router in float32 — a tiny fraction of the parameters — recovers full-precision quality at near-half-precision speed.
+      <span class="src">Original SVG · schematic of findings reported in Fedus et al. (2021), <em>Switch Transformer</em>; bar lengths illustrative, see paper for measured values</span>
+    </figcaption>
+  </figure>
+
+  <div class="aside">
+    <div class="label">Stabilizing further: router z-loss</div>
+    <p>A later paper, ST-MoE (2022), added one more trick: <em>router z-loss</em>, which penalizes the router for emitting very large logits. Large logits cause numerical blowups in the softmax exponential, especially in low precision. This single regularizer significantly stabilized training without hurting quality.</p>
+  </div>
+</section>
+
+<!-- ============ 9. WHAT EXPERTS LEARN ============ -->
+<section id="learn">
+  <div class="chapter-mark"><span class="num">9</span> The specialization question</div>
+  <h2>What do experts <em>actually</em> learn to be good at?</h2>
+
+  <p>Here is the question every student asks first: if I have 8 experts, do I get a "verb expert," a "noun expert," a "punctuation expert"? Is there a "French expert" in a multilingual model?</p>
+
+  <p>The answers are surprisingly mixed.</p>
+
+  <p>The ST-MoE paper carefully analyzed which tokens get routed to which experts in a trained model. Their finding: encoder experts <em>do</em> specialize, but along surprising axes — punctuation, conjunctions, proper nouns, numbers, visual descriptors — i.e. shallow lexical and syntactic categories rather than deep semantic ones. Decoder experts specialize less; routing in the decoder looks more uniform.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Encoder experts specialize — but along lexical and syntactic axes, not semantic ones</text>
+      <!-- Header row -->
+      <g font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165" letter-spacing="0.1em">
+        <text x="100" y="62" text-anchor="middle">EXPERT</text>
+        <text x="240" y="62" text-anchor="middle">CATEGORY IT TENDS TO HANDLE</text>
+        <text x="540" y="62" text-anchor="middle">REPRESENTATIVE TOKENS</text>
+      </g>
+      <line x1="50" y1="74" x2="700" y2="74" stroke="#7a7165" stroke-width="1"/>
+      <!-- rows -->
+      <g font-family="JetBrains Mono,monospace" font-size="11">
+        <g transform="translate(0,98)">
+          <rect x="78" y="-14" width="44" height="22" rx="11" fill="#b03d1a"/>
+          <text x="100" y="1" text-anchor="middle" fill="#fff" font-weight="600">E₁</text>
+          <text x="240" y="1" text-anchor="middle" fill="#3d3830">punctuation</text>
+          <text x="540" y="1" text-anchor="middle" fill="#3d3830" font-style="italic">. , ; : ? !</text>
+        </g>
+        <line x1="50" y1="118" x2="700" y2="118" stroke="#e2d8c2" stroke-width="0.5"/>
+        <g transform="translate(0,142)">
+          <rect x="78" y="-14" width="44" height="22" rx="11" fill="#506348"/>
+          <text x="100" y="1" text-anchor="middle" fill="#fff" font-weight="600">E₂</text>
+          <text x="240" y="1" text-anchor="middle" fill="#3d3830">conjunctions / fillers</text>
+          <text x="540" y="1" text-anchor="middle" fill="#3d3830" font-style="italic">and · or · but · so · the · a</text>
+        </g>
+        <line x1="50" y1="162" x2="700" y2="162" stroke="#e2d8c2" stroke-width="0.5"/>
+        <g transform="translate(0,186)">
+          <rect x="78" y="-14" width="44" height="22" rx="11" fill="#b88528"/>
+          <text x="100" y="1" text-anchor="middle" fill="#fff" font-weight="600">E₃</text>
+          <text x="240" y="1" text-anchor="middle" fill="#3d3830">numbers / quantities</text>
+          <text x="540" y="1" text-anchor="middle" fill="#3d3830" font-style="italic">2024 · 14% · 1,200 · twelve</text>
+        </g>
+        <line x1="50" y1="206" x2="700" y2="206" stroke="#e2d8c2" stroke-width="0.5"/>
+        <g transform="translate(0,230)">
+          <rect x="78" y="-14" width="44" height="22" rx="11" fill="#3a5a72"/>
+          <text x="100" y="1" text-anchor="middle" fill="#fff" font-weight="600">E₄</text>
+          <text x="240" y="1" text-anchor="middle" fill="#3d3830">proper nouns</text>
+          <text x="540" y="1" text-anchor="middle" fill="#3d3830" font-style="italic">London · Marie · Apple · Newton</text>
+        </g>
+        <line x1="50" y1="250" x2="700" y2="250" stroke="#e2d8c2" stroke-width="0.5"/>
+        <g transform="translate(0,274)">
+          <rect x="78" y="-14" width="44" height="22" rx="11" fill="#8a3a5e"/>
+          <text x="100" y="1" text-anchor="middle" fill="#fff" font-weight="600">E₅</text>
+          <text x="240" y="1" text-anchor="middle" fill="#3d3830">visual descriptors</text>
+          <text x="540" y="1" text-anchor="middle" fill="#3d3830" font-style="italic">red · soft · curved · gleaming</text>
+        </g>
+      </g>
+      <text x="360" y="306" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">Note: no "French expert", no "math expert" — load-balancing forces every expert to be multilingual and multi-domain</text>
+    </svg>
+    <figcaption>
+      ST-MoE's analysis of what encoder experts specialize in. Specialization happens along <em>shallow</em> categories — punctuation, function words, numbers, proper nouns — not along the high-level semantic axes (language, topic, domain) that intuition might predict. The auxiliary load-balance loss prevents per-language or per-domain experts by construction.
+      <span class="src">Original SVG · category structure illustrative; based on observations from Zoph et al. (2022), <em>ST-MoE</em></span>
+    </figcaption>
+  </figure>
+
+  <p>For multilingual models the story is even more counter-intuitive: there is <em>no</em> clean per-language expert. You might have hoped that "expert 3 handles French and expert 7 handles Mandarin," and that would be tidy and human-interpretable. It doesn't happen. The auxiliary load-balancing loss actively prevents it — load balance forces every expert to see tokens from every language, so each expert ends up multilingual by construction.</p>
+
+  <div class="aside insight">
+    <div class="label">Pedagogical point</div>
+    <p>The router is not a librarian putting books on labeled shelves. It's an opportunistic dispatcher whose entire reward signal is "make the loss go down while keeping experts roughly balanced." Whatever specialization emerges is whatever serves that joint objective.</p>
+  </div>
+</section>
+
+<!-- ============ 10. FIELD NOTES ============ -->
+<section id="fieldnotes">
+  <div class="chapter-mark"><span class="num">10</span> Field notes</div>
+  <h2>Inside a <em>real</em> MoE: instrumenting Qwen1.5-MoE</h2>
+
+  <p>Theory tells us the router learns to specialize, that experts diverge, and that load balancing is a constant battle. But none of that is quite as convincing as opening up a working production model and watching the routing happen on real prompts. Let's do exactly that.</p>
+
+  <p>Our subject is <strong>Qwen1.5-MoE-A2.7B-Chat</strong>, an open-weight production MoE released by Alibaba. It's small enough to fit on a free Colab T4 GPU, but architecturally serious. The headline specs:</p>
+
+  <ul class="fancy">
+    <li><strong>14.3 billion total parameters</strong>, of which only <strong>~2.7 billion are active</strong> per token. The "A" in "A2.7B" stands for <em>active</em> — Qwen telegraphs the sparse-vs-dense distinction right in the model name.</li>
+    <li><strong>24 transformer layers, every single one of them MoE.</strong> No interleaving with dense FFNs (unlike GShard). Routing happens at every depth.</li>
+    <li><strong>60 experts per layer, top-4 routing.</strong> So 4/60 ≈ 6.7% of the experts in any layer fire for any given token.</li>
+    <li>A <strong>shared expert</strong> alongside the routed pool, which runs for <em>every</em> token regardless of routing — a hybrid trick borrowed from DeepSeek-MoE that captures common knowledge cheaply while leaving the specialists free to specialize. This is why active params are ~2.7B rather than the strict (4/60) × 14.3B you'd compute from sparsity alone.</li>
+  </ul>
+
+  <h3>The experiment</h3>
+
+  <p>We register PyTorch forward hooks on every <code>Qwen2MoeTopKRouter</code> module — the small (60, 2048) linear layer at the heart of each MoE block — and intercept its outputs as the model runs. For each token, at each layer, we record the raw logits, the post-softmax probabilities, and which 4 experts were chosen.</p>
+
+  <p>Then we run four prompts, each from a different domain:</p>
+
+  <pre class="diagram">
+   math       →  "What is 2 + 2?"
+   code       →  "def fibonacci(n):"
+   creative   →  "Once upon a time in a dark forest,"
+   factual    →  "The capital of France is"</pre>
+
+  <p>Each prompt is a few tokens long. With four prompts and 24 layers each making top-4 selections, we end up with a few hundred routing events to inspect — small but enough to see real patterns.</p>
+
+  <div class="aside">
+    <div class="label">Source</div>
+    <p>The experiments and visualizations summarized in this section are reproduced from <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/10-mixture-of-experts/live-moe-demo.ipynb">P. Kulkarni's <em>live-moe-demo</em> notebook</a> in the <code>learn-generative-ai</code> teaching repo. The plots below are illustrations of the patterns reported there; the original notebook runs the live model and produces the actual matplotlib output.</p>
+  </div>
+
+  <h3>Finding 1 — Routing diverges by domain at layer zero</h3>
+
+  <p>You might expect early layers to do generic, domain-agnostic processing — recognize that there are tokens here, do shallow lexical work — and only later layers to specialize. The data says no. The four prompts choose different top-4 experts at <em>layer 0 already</em>. By the time a token has been embedded and run through one self-attention sublayer, the router has enough signal to disagree based on input domain. There is no "we haven't decided yet what kind of input this is" warm-up phase.</p>
+
+  <h3>Finding 2 — Utilization on a small probe is visibly skewed</h3>
+
+  <p>Across all four prompts × 24 layers, the routers made 384 expert selections. If routing were perfectly uniform, every one of the 60 experts would receive 384/60 ≈ 6.4 selections. In practice:</p>
+
+  <ul class="fancy">
+    <li>54 of 60 experts received at least one selection.</li>
+    <li><strong>Six experts received zero traffic</strong> from these prompts.</li>
+    <li>The most-chosen expert (ID 52) was selected <strong>22 times — roughly 3.4× the uniform ideal</strong>.</li>
+    <li>The 5th-most-chosen got 13 selections — so the gap from #1 to #5 is 22 vs. 13.</li>
+  </ul>
+
+  <figure>
+    <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <!-- y-axis -->
+      <line x1="46" y1="20" x2="46" y2="220" stroke="#7a7165" stroke-width="1"/>
+      <!-- x-axis -->
+      <line x1="46" y1="220" x2="700" y2="220" stroke="#7a7165" stroke-width="1"/>
+      <!-- y-axis labels -->
+      <text x="40" y="24" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#7a7165">25</text>
+      <text x="40" y="80" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#7a7165">15</text>
+      <text x="40" y="160" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#7a7165">5</text>
+      <text x="40" y="223" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#7a7165">0</text>
+      <!-- ideal line at y = 220 - 6.4*8 = 168.8 -->
+      <line x1="46" y1="168.8" x2="700" y2="168.8" stroke="#b03d1a" stroke-width="1" stroke-dasharray="4,3" opacity="0.7"/>
+      <text x="700" y="166" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#b03d1a">ideal ≈ 6.4</text>
+      <!-- bars: data sums to ~384, max=22, 5th=13, six zeros at the end -->
+      <!-- bar width 9.5, gap 1, start x=52, scale 8 px per selection -->
+      <!-- Highlighting top bar (Expert 52) in rust color -->
+      <g fill="#506348">
+        <rect x="52"  y="44"  width="9.5" height="176"/><!--22-->
+        <rect x="63"  y="68"  width="9.5" height="152"/><!--19-->
+        <rect x="74"  y="84"  width="9.5" height="136"/><!--17-->
+        <rect x="85"  y="100" width="9.5" height="120"/><!--15-->
+        <rect x="96"  y="116" width="9.5" height="104"/><!--13-->
+        <rect x="107" y="116" width="9.5" height="104"/><!--13-->
+        <rect x="118" y="124" width="9.5" height="96"/><!--12-->
+        <rect x="129" y="132" width="9.5" height="88"/><!--11-->
+        <rect x="140" y="132" width="9.5" height="88"/><!--11-->
+        <rect x="151" y="140" width="9.5" height="80"/><!--10-->
+        <rect x="162" y="140" width="9.5" height="80"/><!--10-->
+        <rect x="173" y="148" width="9.5" height="72"/><!--9-->
+        <rect x="184" y="148" width="9.5" height="72"/><!--9-->
+        <rect x="195" y="148" width="9.5" height="72"/><!--9-->
+        <rect x="206" y="156" width="9.5" height="64"/><!--8-->
+        <rect x="217" y="156" width="9.5" height="64"/><!--8-->
+        <rect x="228" y="156" width="9.5" height="64"/><!--8-->
+        <rect x="239" y="164" width="9.5" height="56"/><!--7-->
+        <rect x="250" y="164" width="9.5" height="56"/><!--7-->
+        <rect x="261" y="164" width="9.5" height="56"/><!--7-->
+        <rect x="272" y="164" width="9.5" height="56"/><!--7-->
+        <rect x="283" y="164" width="9.5" height="56"/><!--7-->
+        <rect x="294" y="172" width="9.5" height="48"/><!--6-->
+        <rect x="305" y="172" width="9.5" height="48"/>
+        <rect x="316" y="172" width="9.5" height="48"/>
+        <rect x="327" y="172" width="9.5" height="48"/>
+        <rect x="338" y="172" width="9.5" height="48"/>
+        <rect x="349" y="172" width="9.5" height="48"/>
+        <rect x="360" y="172" width="9.5" height="48"/>
+        <rect x="371" y="172" width="9.5" height="48"/>
+        <rect x="382" y="172" width="9.5" height="48"/>
+        <rect x="393" y="172" width="9.5" height="48"/><!--6 ×10-->
+        <rect x="404" y="180" width="9.5" height="40"/><!--5-->
+        <rect x="415" y="180" width="9.5" height="40"/>
+        <rect x="426" y="180" width="9.5" height="40"/>
+        <rect x="437" y="180" width="9.5" height="40"/>
+        <rect x="448" y="180" width="9.5" height="40"/>
+        <rect x="459" y="180" width="9.5" height="40"/>
+        <rect x="470" y="180" width="9.5" height="40"/><!--5 ×7-->
+        <rect x="481" y="188" width="9.5" height="32"/><!--4-->
+        <rect x="492" y="188" width="9.5" height="32"/>
+        <rect x="503" y="188" width="9.5" height="32"/>
+        <rect x="514" y="188" width="9.5" height="32"/>
+        <rect x="525" y="188" width="9.5" height="32"/>
+        <rect x="536" y="188" width="9.5" height="32"/>
+        <rect x="547" y="188" width="9.5" height="32"/><!--4 ×7-->
+        <rect x="558" y="196" width="9.5" height="24"/><!--3-->
+        <rect x="569" y="196" width="9.5" height="24"/>
+        <rect x="580" y="196" width="9.5" height="24"/>
+        <rect x="591" y="196" width="9.5" height="24"/><!--3 ×4-->
+        <rect x="602" y="204" width="9.5" height="16"/><!--2-->
+        <rect x="613" y="204" width="9.5" height="16"/>
+        <rect x="624" y="204" width="9.5" height="16"/>
+        <rect x="635" y="204" width="9.5" height="16"/><!--2 ×4-->
+        <rect x="646" y="212" width="9.5" height="8"/><!--1-->
+      </g>
+      <!-- six zero-bars: small ticks -->
+      <g fill="#dfd5bf">
+        <rect x="657" y="218" width="9.5" height="2"/>
+        <rect x="668" y="218" width="9.5" height="2"/>
+        <rect x="679" y="218" width="9.5" height="2"/>
+      </g>
+      <text x="688" y="216" font-family="JetBrains Mono, monospace" font-size="10" fill="#7a7165">↙ six zeros</text>
+      <!-- highlight top bar -->
+      <rect x="52" y="44" width="9.5" height="176" fill="#b03d1a"/>
+      <text x="56" y="38" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#b03d1a" font-weight="600">22</text>
+      <text x="56" y="240" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#b03d1a">E52</text>
+      <!-- axis label -->
+      <text x="373" y="252" text-anchor="middle" font-family="Fraunces, serif" font-style="italic" font-size="12" fill="#3d3830">experts, sorted by selection count (60 total)</text>
+      <text x="14" y="120" text-anchor="middle" font-family="Fraunces, serif" font-style="italic" font-size="12" fill="#3d3830" transform="rotate(-90 14 120)">selections</text>
+    </svg>
+    <figcaption>
+      Expert utilization across the 4-prompt probe — sorted from most-used to least. Top expert (E52) collected 22 selections, six experts collected none. The dashed red line is the uniform ideal.
+      <span class="src">Reproduced from the live-moe-demo notebook · 384 routing events across 24 layers</span>
+    </figcaption>
+  </figure>
+
+  <p>This isn't catastrophic collapse — most experts are participating — but it is exactly the lopsided utilization the auxiliary load-balance loss is designed to flatten during training. At training scale, with millions of tokens flowing through, the distribution does flatten substantially. On a four-prompt probe like this, the unevenness is unmissable.</p>
+
+  <h3>Finding 3 — The router's softmax is almost flat. <em>Top-k</em> is what makes routing decisive.</h3>
+
+  <p>This is the most counter-intuitive observation in the whole notebook, and a great teaching moment. The router emits 60 logits, applies softmax, and the entropy of the resulting probability distribution is <strong>~99.9% of the theoretical maximum</strong> of $\log_2(60) \approx 5.91$ bits. The probability assigned to the "best" expert is barely larger than the probability assigned to the "worst." The softmax is nearly uniform.</p>
+
+  <figure>
+    <svg viewBox="0 0 600 130" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <!-- entropy gauge: a horizontal bar from 0 to log2(60) -->
+      <text x="300" y="22" text-anchor="middle" font-family="Fraunces, serif" font-style="italic" font-size="14" fill="#3d3830">Router entropy across all layers</text>
+      <!-- track -->
+      <rect x="60" y="48" width="480" height="20" fill="#ebe2d0" stroke="#7a7165" stroke-width="0.5"/>
+      <!-- fill at 99.9% -->
+      <rect x="60" y="48" width="479.5" height="20" fill="url(#entropygrad)"/>
+      <defs>
+        <linearGradient id="entropygrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#506348"/>
+          <stop offset="100%" stop-color="#b88528"/>
+        </linearGradient>
+      </defs>
+      <!-- ticks -->
+      <line x1="60" y1="68" x2="60" y2="76" stroke="#7a7165"/>
+      <line x1="540" y1="68" x2="540" y2="76" stroke="#7a7165"/>
+      <text x="60" y="92" font-family="JetBrains Mono, monospace" font-size="10" fill="#7a7165" text-anchor="start">0 bits</text>
+      <text x="540" y="92" font-family="JetBrains Mono, monospace" font-size="10" fill="#7a7165" text-anchor="end">log₂(60) ≈ 5.91 bits  (uniform)</text>
+      <!-- measured marker -->
+      <line x1="538" y1="42" x2="538" y2="74" stroke="#b03d1a" stroke-width="2"/>
+      <text x="538" y="36" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="#b03d1a" font-weight="600">measured: ~99.9% of max</text>
+      <text x="300" y="118" text-anchor="middle" font-family="Fraunces, serif" font-style="italic" font-size="12" fill="#3d3830">The softmax is essentially flat. So how does the router decide?</text>
+    </svg>
+    <figcaption>
+      Across all 24 layers and all four prompts, the entropy of the router's softmax distribution is essentially at the theoretical ceiling for 60 experts. The probabilities are nearly uniform.
+    </figcaption>
+  </figure>
+
+  <p>So how does routing manage to be decisive at all? Because the router's actual output isn't a sample from the softmax — it's an <em>argmax over the top 4</em>. A nearly-flat softmax can still have a definite top-4. Tiny logit differences, of order milli-units in probability, are amplified by the discrete top-k operation into hard yes/no expert assignments.</p>
+
+  <div class="aside insight">
+    <div class="label">Why this matters</div>
+    <p>The router's job is not "produce a confident, peaky distribution." It just has to slightly prefer the right experts — the top-k selector does the rest. This is also why numerical precision in the router matters so much (recall §8: Switch keeps the router in float32 even when experts run in bfloat16). Tiny errors in nearly-tied logits flip which expert gets chosen.</p>
+  </div>
+
+  <h3>Finding 4 — Experts are genuinely distinct, not redundant copies</h3>
+
+  <p>An MoE could fail in a different way than collapse: all 60 experts could end up learning nearly the same transformation. Routing would still be balanced, but it wouldn't matter who got picked because every expert would do the same thing. To check, the notebook computes pairwise cosine similarity between expert <em>weight matrices</em> (the actual MLP parameters of each expert) within a single layer.</p>
+
+  <p>The result is a strongly diagonal-dominant matrix: each expert is similar to itself (cosine 1.0) and only weakly similar to its peers. The off-diagonal cells are low. The 60 experts have learned 60 genuinely different transformations. That's what makes the routing analysis meaningful — if the experts' weights were near-identical, the heatmaps and utilization plots would be empty noise.</p>
+
+  <h3>Finding 5 — Math and code share their experts; creative goes elsewhere</h3>
+
+  <p>For each prompt, average the router's probability vectors across all tokens and all 24 layers, then pick out the top-3 most-favored experts. The result is striking:</p>
+
+  <div class="compare" style="grid-template-columns:1fr 1fr 1fr 1fr;font-size:14px">
+    <div style="border-top-color:#506348">
+      <h4 style="font-size:16px">math</h4>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#3d3830;line-height:2">E16<br>E40<br>E45</div>
+    </div>
+    <div style="border-top-color:#506348">
+      <h4 style="font-size:16px">code</h4>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#3d3830;line-height:2">E16<br>E40<br>E45</div>
+    </div>
+    <div style="border-top-color:#b03d1a">
+      <h4 style="font-size:16px">creative</h4>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#3d3830;line-height:2">E7<br>E14<br>E48</div>
+    </div>
+    <div style="border-top-color:#b88528">
+      <h4 style="font-size:16px">factual</h4>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#3d3830;line-height:2">(its own<br>combination)</div>
+    </div>
+  </div>
+
+  <p>Math and code <em>share the same top-3 experts</em>. Both are structured, symbolic, low-ambiguity inputs, and the model has effectively lumped them together as "formal language." Creative narrative routes through an entirely different set of three. Connect this to Finding 1 — the router really does carve up the input space into domain-shaped regions, just not always along the boundaries you might predict.</p>
+
+  <h3>Finding 6 — Routing similarity has a characteristic depth profile</h3>
+
+  <p>If you instead compute the cosine similarity between two prompts' routing distributions <em>layer by layer</em> (rather than averaged across the whole model), you typically see a pattern like this:</p>
+
+  <figure>
+    <svg viewBox="0 0 600 230" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <!-- axes -->
+      <line x1="60" y1="30" x2="60" y2="180" stroke="#7a7165" stroke-width="1"/>
+      <line x1="60" y1="180" x2="560" y2="180" stroke="#7a7165" stroke-width="1"/>
+      <!-- y axis labels -->
+      <text x="54" y="34" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#7a7165">1.0</text>
+      <text x="54" y="105" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#7a7165">0.85</text>
+      <text x="54" y="183" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#7a7165">0.7</text>
+      <!-- x axis labels -->
+      <text x="60" y="198" font-family="JetBrains Mono, monospace" font-size="10" fill="#7a7165" text-anchor="middle">0</text>
+      <text x="310" y="198" font-family="JetBrains Mono, monospace" font-size="10" fill="#7a7165" text-anchor="middle">12</text>
+      <text x="560" y="198" font-family="JetBrains Mono, monospace" font-size="10" fill="#7a7165" text-anchor="middle">23</text>
+      <text x="310" y="216" font-family="Fraunces, serif" font-style="italic" font-size="12" fill="#3d3830" text-anchor="middle">layer index</text>
+      <!-- math vs code curve - stays high (similar throughout) -->
+      <path d="M 60,40 C 130,50 210,60 280,55 C 350,50 430,55 500,45 L 560,42" stroke="#506348" stroke-width="2" fill="none"/>
+      <text x="566" y="44" font-family="JetBrains Mono, monospace" font-size="10" fill="#506348">math vs code</text>
+      <!-- math vs creative curve - dips in middle -->
+      <path d="M 60,55 C 130,65 200,140 280,160 C 360,170 440,120 500,75 L 560,60" stroke="#b03d1a" stroke-width="2" fill="none"/>
+      <text x="566" y="62" font-family="JetBrains Mono, monospace" font-size="10" fill="#b03d1a">math vs creative</text>
+      <!-- annotation -->
+      <text x="280" y="20" text-anchor="middle" font-family="Fraunces, serif" font-style="italic" font-size="12" fill="#3d3830">per-layer routing similarity (cosine), schematic</text>
+      <line x1="280" y1="166" x2="280" y2="180" stroke="#b03d1a" stroke-width="0.5" stroke-dasharray="3,2"/>
+      <text x="280" y="166" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#b03d1a">specialization dip</text>
+    </svg>
+    <figcaption>
+      Schematic of the per-layer routing similarity shape observed in the notebook. Pairs of similar prompts (math vs code) stay high throughout. Pairs of dissimilar prompts (math vs creative) dip in the middle layers — where domain-specific representation lives — and partly recover at the top, where output-projection work is more universal.
+    </figcaption>
+  </figure>
+
+  <p>This is the same pattern that probing studies of <em>dense</em> models have shown for years: middle layers are where domain-specific representation lives; early and late layers are more universal. The MoE router, given a free choice of which experts to consult per layer, exhibits the same depth structure.</p>
+
+  <h3>Finding 7 — Token path diversity tracks token type</h3>
+
+  <p>For every token in the input, count how many <em>distinct</em> experts handled it across the 24 layers. With top-4 routing the theoretical maximum is min(4 × 24, 60) = 60. In the notebook's runs, content-rich tokens (numbers, code keywords, vivid nouns) tend to see <em>more diverse</em> expert paths; structural tokens (punctuation, articles, whitespace) often touch the same handful of experts at every layer. The router treats <code>"the"</code> the same way at layer 5, layer 15, and layer 23 — but it consults different specialists for <code>"fibonacci"</code> at different depths.</p>
+
+  <p>Combined with Finding 4 (experts are genuinely distinct), this means high path diversity is meaningful: a content-rich token is being passed between specialists doing genuinely different transformations, not shuffled among redundant copies.</p>
+
+  <div class="pullquote">MoE behavior is partially observable. Hooks on the router, four prompts, and a couple of plotting cells reveal exactly the phenomena the theory promised.</div>
+
+  <p>That's a lot of empirical findings packed into one experiment. The larger lesson for a student of MoE: <strong>this architecture is far less mysterious than its reputation</strong>. Standard PyTorch hooks expose every routing decision. You can verify domain-dependent routing, expert distinctness, near-uniform softmax, depth-dependent specialization, and per-token path diversity in a single Colab session. If you remember nothing else from this section, remember that a router is interrogable — and that interrogating it is the fastest way to build intuition for what an MoE actually does.</p>
+</section>
+
+<!-- ============ 11. FINETUNING ============ -->
+<section id="finetune">
+  <div class="chapter-mark"><span class="num">11</span> Fine-tuning</div>
+  <h2>Why MoEs are <em>tricky</em> to fine-tune (and what helps)</h2>
+
+  <p>Pretraining MoEs is a triumph. Fine-tuning them, for years, has been a headache. The core issue is that sparse models <strong>overfit much more easily</strong> than their dense equivalents on small downstream datasets. Look at this learning curve from ST-MoE:</p>
+
+  <figure>
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Sparse vs dense fine-tuning: small task hurts, large task helps</text>
+      <!-- Left panel: small task -->
+      <g transform="translate(40,46)">
+        <text x="160" y="0" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165" letter-spacing="0.1em">SMALL TASK · 5K EXAMPLES</text>
+        <!-- axes -->
+        <line x1="40" y1="30" x2="40" y2="180" stroke="#7a7165" stroke-width="1"/>
+        <line x1="40" y1="180" x2="290" y2="180" stroke="#7a7165" stroke-width="1"/>
+        <text x="34" y="34" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">loss</text>
+        <text x="290" y="195" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">epochs →</text>
+        <!-- dense train (sage solid) -->
+        <path d="M 50 60 C 90 80 140 110 200 130 L 280 145" stroke="#506348" stroke-width="1.8" fill="none"/>
+        <!-- dense val (sage dashed) -->
+        <path d="M 50 70 C 90 90 140 115 200 135 L 280 150" stroke="#506348" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+        <!-- sparse train (rust solid) -->
+        <path d="M 50 60 C 90 75 140 95 200 105 L 280 100" stroke="#b03d1a" stroke-width="1.8" fill="none"/>
+        <!-- sparse val (rust dashed) — overfits, goes UP -->
+        <path d="M 50 70 C 90 95 140 130 200 158 L 280 168" stroke="#b03d1a" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+        <!-- arrow noting overfit -->
+        <text x="245" y="166" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#b03d1a">↑ overfits</text>
+      </g>
+      <!-- Right panel: large task -->
+      <g transform="translate(380,46)">
+        <text x="160" y="0" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165" letter-spacing="0.1em">LARGE TASK · 500K EXAMPLES</text>
+        <line x1="40" y1="30" x2="40" y2="180" stroke="#7a7165" stroke-width="1"/>
+        <line x1="40" y1="180" x2="290" y2="180" stroke="#7a7165" stroke-width="1"/>
+        <text x="34" y="34" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">loss</text>
+        <text x="290" y="195" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">epochs →</text>
+        <!-- dense train -->
+        <path d="M 50 60 C 90 85 140 110 200 125 L 280 130" stroke="#506348" stroke-width="1.8" fill="none"/>
+        <!-- dense val -->
+        <path d="M 50 70 C 90 95 140 120 200 135 L 280 140" stroke="#506348" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+        <!-- sparse train, lower -->
+        <path d="M 50 60 C 90 75 140 95 200 105 L 280 100" stroke="#b03d1a" stroke-width="1.8" fill="none"/>
+        <!-- sparse val, also lower (sparse wins!) -->
+        <path d="M 50 70 C 90 85 140 105 200 115 L 280 110" stroke="#b03d1a" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+        <text x="245" y="108" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#b03d1a">↓ sparse wins</text>
+      </g>
+      <!-- Legend -->
+      <g transform="translate(40,250)" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">
+        <line x1="0" y1="-3" x2="20" y2="-3" stroke="#506348" stroke-width="1.8"/>
+        <text x="26" y="0" fill="#506348">dense</text>
+        <line x1="80" y1="-3" x2="100" y2="-3" stroke="#b03d1a" stroke-width="1.8"/>
+        <text x="106" y="0" fill="#b03d1a">sparse MoE</text>
+        <line x1="200" y1="-3" x2="220" y2="-3" stroke="#7a7165" stroke-width="1.8"/>
+        <text x="226" y="0">train</text>
+        <line x1="280" y1="-3" x2="300" y2="-3" stroke="#7a7165" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <text x="306" y="0">validation</text>
+      </g>
+    </svg>
+    <figcaption>
+      Schematic of the small-vs-large fine-tuning gap. On a small task, the sparse MoE memorizes its training set and validation loss diverges (overfits). On a large task, the same architecture's extra capacity is finally usable and validation loss drops below the dense baseline. The cure is more data — or, as we'll see next, instruction tuning.
+      <span class="src">Original SVG · curve shapes schematic, after Zoph et al. (2022), <em>ST-MoE</em></span>
+    </figcaption>
+  </figure>
+
+  <p>Several practical findings have accumulated about how to fine-tune MoEs well:</p>
+
+  <ul class="fancy">
+    <li><strong>Different regularization for the sparse layers.</strong> Use one dropout rate for the dense parts of the model and a higher one inside the experts. The expert layers have lots of capacity and need more taming.</li>
+    <li><strong>Small batch sizes, larger learning rates.</strong> Counter to dense-model intuition. The figure below summarizes ST-MoE's recommendation.</li>
+    <li><strong>You can freeze the MoE layers entirely.</strong> Surprisingly: if you fine-tune everything <em>except</em> the experts, you lose almost no quality, and you save a lot of memory and time. The reverse — freezing everything except the experts — performs much worse.</li>
+  </ul>
+
+  <figure>
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Which parameters need to update during fine-tuning?</text>
+      <!-- y-axis -->
+      <line x1="100" y1="60" x2="100" y2="220" stroke="#7a7165" stroke-width="1"/>
+      <line x1="100" y1="220" x2="660" y2="220" stroke="#7a7165" stroke-width="1"/>
+      <text x="94" y="64" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">100</text>
+      <text x="94" y="142" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">50</text>
+      <text x="94" y="223" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">0</text>
+      <text x="50" y="142" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#3d3830" transform="rotate(-90 50 142)">downstream score</text>
+      <!-- bars -->
+      <g font-family="JetBrains Mono,monospace" font-size="10">
+        <!-- bar 1: full update -->
+        <rect x="160" y="76" width="80" height="144" fill="#506348"/>
+        <text x="200" y="68" text-anchor="middle" font-size="11" fill="#506348" font-weight="600">90</text>
+        <text x="200" y="240" text-anchor="middle" fill="#3d3830">full update</text>
+        <text x="200" y="256" text-anchor="middle" fill="#7a7165" font-style="italic" font-family="Fraunces,serif">baseline</text>
+        <!-- bar 2: freeze MoE -->
+        <rect x="320" y="80" width="80" height="140" fill="#506348"/>
+        <text x="360" y="68" text-anchor="middle" font-size="11" fill="#506348" font-weight="600">88</text>
+        <text x="360" y="240" text-anchor="middle" fill="#3d3830">freeze MoE</text>
+        <text x="360" y="256" text-anchor="middle" fill="#7a7165" font-style="italic" font-family="Fraunces,serif">≈ baseline ✓</text>
+        <!-- bar 3: freeze non-MoE -->
+        <rect x="480" y="170" width="80" height="50" fill="#b03d1a"/>
+        <text x="520" y="162" text-anchor="middle" font-size="11" fill="#b03d1a" font-weight="600">52</text>
+        <text x="520" y="240" text-anchor="middle" fill="#3d3830">freeze non-MoE</text>
+        <text x="520" y="256" text-anchor="middle" fill="#b03d1a" font-style="italic" font-family="Fraunces,serif">collapses ✗</text>
+      </g>
+      <!-- Tick marks for 50 and 100 -->
+      <line x1="98" y1="142" x2="102" y2="142" stroke="#7a7165"/>
+      <line x1="98" y1="60" x2="102" y2="60" stroke="#7a7165"/>
+      <!-- horizontal reference line -->
+      <line x1="100" y1="76" x2="660" y2="76" stroke="#506348" stroke-width="0.5" stroke-dasharray="3,3" opacity="0.5"/>
+    </svg>
+    <figcaption>
+      Two seemingly symmetric strategies give very asymmetric results. Freezing the MoE experts (and updating only attention, layer norms, and embeddings) recovers nearly full fine-tuning quality while saving large amounts of memory. The opposite — freezing everything <em>except</em> the experts — collapses performance. The sparse expert layers don't need to change much for downstream adaptation; the dense parts of the model do.
+      <span class="src">Original SVG · schematic of findings reported in Zoph et al. (2022), <em>ST-MoE</em></span>
+    </figcaption>
+  </figure>
+
+  <figure>
+    <svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Sparse models prefer different fine-tuning hyperparameters</text>
+      <!-- header -->
+      <g font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165" letter-spacing="0.1em">
+        <text x="220" y="62" text-anchor="middle">MODEL</text>
+        <text x="420" y="62" text-anchor="middle">BATCH SIZE</text>
+        <text x="600" y="62" text-anchor="middle">LEARNING RATE</text>
+      </g>
+      <line x1="100" y1="74" x2="680" y2="74" stroke="#7a7165" stroke-width="1"/>
+      <!-- Dense row -->
+      <g transform="translate(0,114)">
+        <rect x="170" y="-16" width="100" height="32" rx="4" fill="#506348"/>
+        <text x="220" y="6" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="13" fill="#fff" font-weight="600">DENSE</text>
+        <!-- batch size: large -->
+        <g transform="translate(360,0)">
+          <text x="60" y="-2" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">larger</text>
+          <rect x="0" y="6" width="120" height="10" rx="5" fill="#ebe2d0"/>
+          <rect x="0" y="6" width="100" height="10" rx="5" fill="#506348"/>
+        </g>
+        <!-- LR: small -->
+        <g transform="translate(540,0)">
+          <text x="60" y="-2" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">smaller</text>
+          <rect x="0" y="6" width="120" height="10" rx="5" fill="#ebe2d0"/>
+          <rect x="0" y="6" width="36" height="10" rx="5" fill="#506348"/>
+        </g>
+      </g>
+      <line x1="100" y1="148" x2="680" y2="148" stroke="#e2d8c2" stroke-width="0.5"/>
+      <!-- Sparse row -->
+      <g transform="translate(0,188)">
+        <rect x="170" y="-16" width="100" height="32" rx="4" fill="#b03d1a"/>
+        <text x="220" y="6" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="13" fill="#fff" font-weight="600">SPARSE</text>
+        <!-- batch size: small -->
+        <g transform="translate(360,0)">
+          <text x="60" y="-2" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">smaller</text>
+          <rect x="0" y="6" width="120" height="10" rx="5" fill="#ebe2d0"/>
+          <rect x="0" y="6" width="36" height="10" rx="5" fill="#b03d1a"/>
+        </g>
+        <!-- LR: large -->
+        <g transform="translate(540,0)">
+          <text x="60" y="-2" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">larger</text>
+          <rect x="0" y="6" width="120" height="10" rx="5" fill="#ebe2d0"/>
+          <rect x="0" y="6" width="100" height="10" rx="5" fill="#b03d1a"/>
+        </g>
+      </g>
+    </svg>
+    <figcaption>
+      Two-sided rule of thumb for ST-MoE fine-tuning: dense models like the standard recipe of large batches and small learning rates, but sparse MoEs do better with smaller batches and larger learning rates. The asymmetry reflects how much of the loss surface the routing decisions can suddenly reshape.
+      <span class="src">Original SVG · directional summary of guidance from Zoph et al. (2022), <em>ST-MoE</em></span>
+    </figcaption>
+  </figure>
+
+  <h3>The instruction-tuning surprise</h3>
+
+  <p>The most encouraging recent result: MoEs benefit <em>more</em> from instruction tuning than dense models do. The 2023 paper "MoEs Meet Instruction Tuning" trained both a dense T5 and an MoE T5 in three regimes — single-task fine-tune, multi-task instruction-tune, and instruction-tune-then-fine-tune. The MoE lagged the dense model under plain single-task fine-tuning, but pulled clearly ahead once instruction tuning was involved.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Sparse MoEs benefit disproportionately from instruction tuning</text>
+      <!-- y-axis -->
+      <line x1="100" y1="60" x2="100" y2="240" stroke="#7a7165" stroke-width="1"/>
+      <line x1="100" y1="240" x2="680" y2="240" stroke="#7a7165" stroke-width="1"/>
+      <text x="94" y="64" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">100</text>
+      <text x="94" y="152" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">50</text>
+      <text x="94" y="243" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">0</text>
+      <text x="50" y="150" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#3d3830" transform="rotate(-90 50 150)">downstream eval</text>
+      <!-- Group 1: single-task fine-tune -->
+      <g transform="translate(160,0)">
+        <text x="60" y="270" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">single-task FT</text>
+        <text x="60" y="284" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#7a7165">small dataset</text>
+        <rect x="14" y="100" width="40" height="140" fill="#506348"/>
+        <text x="34" y="92" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#506348" font-weight="600">76</text>
+        <rect x="64" y="120" width="40" height="120" fill="#b03d1a"/>
+        <text x="84" y="112" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#b03d1a" font-weight="600">68</text>
+      </g>
+      <!-- Group 2: instruction tune only -->
+      <g transform="translate(330,0)">
+        <text x="60" y="270" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">inst. tune only</text>
+        <text x="60" y="284" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#7a7165">multi-task mix</text>
+        <rect x="14" y="92" width="40" height="148" fill="#506348"/>
+        <text x="34" y="84" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#506348" font-weight="600">80</text>
+        <rect x="64" y="76" width="40" height="164" fill="#b03d1a"/>
+        <text x="84" y="68" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#b03d1a" font-weight="600">86</text>
+      </g>
+      <!-- Group 3: inst-tune then FT -->
+      <g transform="translate(500,0)">
+        <text x="60" y="270" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">IT → fine-tune</text>
+        <text x="60" y="284" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#7a7165">best of both</text>
+        <rect x="14" y="84" width="40" height="156" fill="#506348"/>
+        <text x="34" y="76" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#506348" font-weight="600">82</text>
+        <rect x="64" y="60" width="40" height="180" fill="#b03d1a"/>
+        <text x="84" y="52" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#b03d1a" font-weight="600">92</text>
+      </g>
+      <!-- legend -->
+      <g transform="translate(160,38)" font-family="JetBrains Mono,monospace" font-size="10">
+        <rect x="0" y="-9" width="14" height="10" fill="#506348"/>
+        <text x="20" y="0" fill="#506348">dense</text>
+        <rect x="100" y="-9" width="14" height="10" fill="#b03d1a"/>
+        <text x="120" y="0" fill="#b03d1a">sparse MoE</text>
+      </g>
+      <text x="360" y="307" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">Sparse loses without instruction data; once present, the sparse-vs-dense gap inverts and grows</text>
+    </svg>
+    <figcaption>
+      Three fine-tuning regimes for the same MoE backbone. Without instruction tuning, the sparse model lags. With multi-task instruction tuning — and especially with instruction-tune-then-fine-tune — the MoE pulls ahead and the gap widens. Many small tasks ↔ many specialists is a natural fit.
+      <span class="src">Original SVG · pattern after Shen et al. (2023), <em>MoEs Meet Instruction Tuning</em>; numbers illustrative, see paper for benchmark-specific values</span>
+    </figcaption>
+  </figure>
+
+  <p>This makes intuitive sense if you stop and think: many small tasks ↔ many specialists is a natural fit. A model with eight experts has a much richer capacity to allocate "this kind of input goes to that kind of expert" when there are many task types in the training mix. The dense model has no such structure to exploit.</p>
+</section>
+
+<!-- ============ 12. BRRR ============ -->
+<section id="brrr">
+  <div class="chapter-mark"><span class="num">12</span> Systems</div>
+  <h2>Making MoE go <em>brrr</em> on real hardware</h2>
+
+  <p>An MoE's compute-vs-memory tradeoff only pays off if you can actually run experts in parallel across GPUs without the GPUs sitting idle waiting for tokens to arrive. This is a systems problem as much as a modeling one.</p>
+
+  <h3>Expert parallelism</h3>
+
+  <p>The standard parallelism strategies in deep learning are:</p>
+
+  <dl class="glossary">
+    <dt>Data parallelism</dt>
+    <dd>Same weights replicated on every GPU; each GPU sees a different slice of the batch.</dd>
+    <dt>Model parallelism</dt>
+    <dd>Different chunks of the model on different GPUs; the same data flows through all of them.</dd>
+    <dt>Expert parallelism (the new one)</dt>
+    <dd>Different <em>experts</em> live on different GPUs. When a token needs expert <em>i</em>, its hidden state is sent (over the network) to whichever GPU holds expert <em>i</em>, processed there, and sent back.</dd>
+  </dl>
+
+  <figure>
+    <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Three ways to split a model across four GPUs</text>
+      <!-- Three panels -->
+      <!-- Panel 1: Data parallelism -->
+      <g transform="translate(20, 50)">
+        <text x="100" y="0" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830" font-weight="600" letter-spacing="0.1em">DATA PARALLELISM</text>
+        <text x="100" y="14" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#7a7165">same weights, different data</text>
+        <!-- 4 GPU columns -->
+        <g font-family="JetBrains Mono,monospace" font-size="9">
+          <g transform="translate(10, 36)">
+            <rect width="36" height="60" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+            <text x="18" y="-4" text-anchor="middle" fill="#7a7165">GPU 1</text>
+            <rect x="3" y="3" width="30" height="54" fill="#506348" opacity="0.85"/>
+            <text x="18" y="34" text-anchor="middle" fill="#fff" font-weight="600">W</text>
+            <text x="18" y="76" text-anchor="middle" font-size="8" fill="#b03d1a" font-weight="600">batch a</text>
+          </g>
+          <g transform="translate(56, 36)">
+            <rect width="36" height="60" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+            <text x="18" y="-4" text-anchor="middle" fill="#7a7165">GPU 2</text>
+            <rect x="3" y="3" width="30" height="54" fill="#506348" opacity="0.85"/>
+            <text x="18" y="34" text-anchor="middle" fill="#fff" font-weight="600">W</text>
+            <text x="18" y="76" text-anchor="middle" font-size="8" fill="#b03d1a" font-weight="600">batch b</text>
+          </g>
+          <g transform="translate(102, 36)">
+            <rect width="36" height="60" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+            <text x="18" y="-4" text-anchor="middle" fill="#7a7165">GPU 3</text>
+            <rect x="3" y="3" width="30" height="54" fill="#506348" opacity="0.85"/>
+            <text x="18" y="34" text-anchor="middle" fill="#fff" font-weight="600">W</text>
+            <text x="18" y="76" text-anchor="middle" font-size="8" fill="#b03d1a" font-weight="600">batch c</text>
+          </g>
+          <g transform="translate(148, 36)">
+            <rect width="36" height="60" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+            <text x="18" y="-4" text-anchor="middle" fill="#7a7165">GPU 4</text>
+            <rect x="3" y="3" width="30" height="54" fill="#506348" opacity="0.85"/>
+            <text x="18" y="34" text-anchor="middle" fill="#fff" font-weight="600">W</text>
+            <text x="18" y="76" text-anchor="middle" font-size="8" fill="#b03d1a" font-weight="600">batch d</text>
+          </g>
+        </g>
+        <text x="100" y="190" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#7a7165">communication: all-reduce gradients</text>
+        <text x="100" y="206" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#7a7165">limit: model must fit on one GPU</text>
+      </g>
+      <!-- Panel 2: Model parallelism -->
+      <g transform="translate(260, 50)">
+        <text x="100" y="0" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830" font-weight="600" letter-spacing="0.1em">MODEL PARALLELISM</text>
+        <text x="100" y="14" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#7a7165">weight slices, same data</text>
+        <g font-family="JetBrains Mono,monospace" font-size="9">
+          <g transform="translate(10, 36)">
+            <rect width="36" height="60" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+            <text x="18" y="-4" text-anchor="middle" fill="#7a7165">GPU 1</text>
+            <rect x="3" y="3" width="30" height="54" fill="#b03d1a" opacity="0.7"/>
+            <text x="18" y="34" text-anchor="middle" fill="#fff" font-weight="600">W₁</text>
+            <text x="18" y="76" text-anchor="middle" font-size="8" fill="#506348" font-weight="600">batch</text>
+          </g>
+          <g transform="translate(56, 36)">
+            <rect width="36" height="60" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+            <text x="18" y="-4" text-anchor="middle" fill="#7a7165">GPU 2</text>
+            <rect x="3" y="3" width="30" height="54" fill="#b03d1a" opacity="0.7"/>
+            <text x="18" y="34" text-anchor="middle" fill="#fff" font-weight="600">W₂</text>
+            <text x="18" y="76" text-anchor="middle" font-size="8" fill="#506348" font-weight="600">batch</text>
+          </g>
+          <g transform="translate(102, 36)">
+            <rect width="36" height="60" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+            <text x="18" y="-4" text-anchor="middle" fill="#7a7165">GPU 3</text>
+            <rect x="3" y="3" width="30" height="54" fill="#b03d1a" opacity="0.7"/>
+            <text x="18" y="34" text-anchor="middle" fill="#fff" font-weight="600">W₃</text>
+            <text x="18" y="76" text-anchor="middle" font-size="8" fill="#506348" font-weight="600">batch</text>
+          </g>
+          <g transform="translate(148, 36)">
+            <rect width="36" height="60" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+            <text x="18" y="-4" text-anchor="middle" fill="#7a7165">GPU 4</text>
+            <rect x="3" y="3" width="30" height="54" fill="#b03d1a" opacity="0.7"/>
+            <text x="18" y="34" text-anchor="middle" fill="#fff" font-weight="600">W₄</text>
+            <text x="18" y="76" text-anchor="middle" font-size="8" fill="#506348" font-weight="600">batch</text>
+          </g>
+        </g>
+        <text x="100" y="190" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#7a7165">communication: activations between layers</text>
+        <text x="100" y="206" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#7a7165">enables larger-than-one-GPU models</text>
+      </g>
+      <!-- Panel 3: Expert parallelism -->
+      <g transform="translate(500, 50)">
+        <text x="100" y="0" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#b03d1a" font-weight="600" letter-spacing="0.1em">EXPERT PARALLELISM</text>
+        <text x="100" y="14" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#7a7165">whole experts, sharded</text>
+        <g font-family="JetBrains Mono,monospace" font-size="9">
+          <g transform="translate(10, 36)">
+            <rect width="36" height="60" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+            <text x="18" y="-4" text-anchor="middle" fill="#7a7165">GPU 1</text>
+            <rect x="3" y="3" width="30" height="26" fill="#b03d1a"/>
+            <text x="18" y="20" text-anchor="middle" fill="#fff" font-weight="600">E₁</text>
+            <rect x="3" y="31" width="30" height="26" fill="#506348"/>
+            <text x="18" y="48" text-anchor="middle" fill="#fff" font-weight="600">E₂</text>
+            <text x="18" y="76" text-anchor="middle" font-size="8" fill="#b03d1a" font-weight="600">batch a</text>
+          </g>
+          <g transform="translate(56, 36)">
+            <rect width="36" height="60" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+            <text x="18" y="-4" text-anchor="middle" fill="#7a7165">GPU 2</text>
+            <rect x="3" y="3" width="30" height="26" fill="#b88528"/>
+            <text x="18" y="20" text-anchor="middle" fill="#fff" font-weight="600">E₃</text>
+            <rect x="3" y="31" width="30" height="26" fill="#3a5a72"/>
+            <text x="18" y="48" text-anchor="middle" fill="#fff" font-weight="600">E₄</text>
+            <text x="18" y="76" text-anchor="middle" font-size="8" fill="#b03d1a" font-weight="600">batch b</text>
+          </g>
+          <g transform="translate(102, 36)">
+            <rect width="36" height="60" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+            <text x="18" y="-4" text-anchor="middle" fill="#7a7165">GPU 3</text>
+            <rect x="3" y="3" width="30" height="26" fill="#8a3a5e"/>
+            <text x="18" y="20" text-anchor="middle" fill="#fff" font-weight="600">E₅</text>
+            <rect x="3" y="31" width="30" height="26" fill="#5e7a3a"/>
+            <text x="18" y="48" text-anchor="middle" fill="#fff" font-weight="600">E₆</text>
+            <text x="18" y="76" text-anchor="middle" font-size="8" fill="#b03d1a" font-weight="600">batch c</text>
+          </g>
+          <g transform="translate(148, 36)">
+            <rect width="36" height="60" rx="3" fill="#fcf8ee" stroke="#7a7165"/>
+            <text x="18" y="-4" text-anchor="middle" fill="#7a7165">GPU 4</text>
+            <rect x="3" y="3" width="30" height="26" fill="#7a3a8a"/>
+            <text x="18" y="20" text-anchor="middle" fill="#fff" font-weight="600">E₇</text>
+            <rect x="3" y="31" width="30" height="26" fill="#3a8a7a"/>
+            <text x="18" y="48" text-anchor="middle" fill="#fff" font-weight="600">E₈</text>
+            <text x="18" y="76" text-anchor="middle" font-size="8" fill="#b03d1a" font-weight="600">batch d</text>
+          </g>
+        </g>
+        <text x="100" y="190" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#7a7165">communication: all-to-all token shuffle</text>
+        <text x="100" y="206" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#b03d1a">unique to MoE</text>
+      </g>
+      <!-- Bottom note -->
+      <text x="360" y="332" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">A real MoE training stack typically <em>combines</em> all three: data parallelism × expert parallelism × (optionally) model parallelism</text>
+    </svg>
+    <figcaption>
+      Three ways to split a model across four GPUs. Data parallelism replicates the model and shards the batch. Model parallelism shards the weights and replicates the batch. Expert parallelism is the new pattern unique to MoE: <em>whole experts</em> live on different devices, and tokens shuffle across the network whenever they need to reach an expert that isn't local.
+      <span class="src">Original SVG · concept after Fedus et al. (2021), <em>Switch Transformer</em></span>
+    </figcaption>
+  </figure>
+
+  <p>Expert parallelism introduces a new bottleneck: the all-to-all communication step. Every GPU must send its tokens to the GPUs holding the right experts, then receive the results back. If your network is slow, this dominates everything else. If your routing is unbalanced, some GPUs sit idle while others are swamped. This is why load balance is not just a quality concern — it's a throughput concern.</p>
+
+  <h3>Capacity factor — a knob you can dial</h3>
+
+  <p>Recall that capacity factor controls how much overflow buffer each expert gets. In training, ~1.25 is typical. At inference time, you can <em>change</em> the capacity factor — turn it down to save compute when serving, or up if you have spare capacity and want fewer dropped tokens. It's a runtime knob, not a fixed architectural choice.</p>
+
+  <h3>Megablocks: when the static-shape assumption hurts</h3>
+
+  <p>Standard MoE implementations use batched matrix multiplication, which assumes every expert processes the same number of tokens (so the batched tensor has a uniform shape). In reality, expert assignment is uneven — even with load balancing, some experts get more tokens. The mismatch is usually papered over by either dropping overflow tokens or padding with zeros. Both are wasteful.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Megablocks: variable-size block-sparse matmul, no padding, no dropping</text>
+      <!-- LEFT: standard batched matmul (uniform, with padding/drops) -->
+      <g transform="translate(40, 60)">
+        <text x="140" y="-4" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165" letter-spacing="0.1em">STANDARD BATCHED MATMUL</text>
+        <text x="140" y="10" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#3d3830">requires uniform block size</text>
+        <!-- 4 expert rows, each "padded to a uniform width" -->
+        <g font-family="JetBrains Mono,monospace" font-size="9">
+          <rect x="0" y="30" width="280" height="44" fill="#fcf8ee" stroke="#d9cfba"/>
+          <text x="-6" y="56" text-anchor="end" fill="#7a7165">E₁</text>
+          <rect x="2" y="32" width="200" height="40" fill="#506348" opacity="0.85"/>
+          <text x="102" y="56" text-anchor="middle" fill="#fff" font-weight="600">used (real tokens)</text>
+          <rect x="204" y="32" width="74" height="40" fill="#dfd5bf" stroke="none"/>
+          <text x="241" y="56" text-anchor="middle" fill="#7a7165" font-style="italic">padding</text>
+
+          <rect x="0" y="80" width="280" height="44" fill="#fcf8ee" stroke="#d9cfba"/>
+          <text x="-6" y="106" text-anchor="end" fill="#7a7165">E₂</text>
+          <rect x="2" y="82" width="276" height="40" fill="#b03d1a" opacity="0.85"/>
+          <text x="140" y="106" text-anchor="middle" fill="#fff" font-weight="600">at capacity</text>
+
+          <rect x="0" y="130" width="280" height="44" fill="#fcf8ee" stroke="#d9cfba"/>
+          <text x="-6" y="156" text-anchor="end" fill="#7a7165">E₃</text>
+          <rect x="2" y="132" width="100" height="40" fill="#b88528" opacity="0.85"/>
+          <text x="52" y="156" text-anchor="middle" fill="#fff" font-weight="600">used</text>
+          <rect x="104" y="132" width="174" height="40" fill="#dfd5bf"/>
+          <text x="191" y="156" text-anchor="middle" fill="#7a7165" font-style="italic">padding (wasted)</text>
+
+          <rect x="0" y="180" width="280" height="44" fill="#fcf8ee" stroke="#d9cfba"/>
+          <text x="-6" y="206" text-anchor="end" fill="#7a7165">E₄</text>
+          <rect x="2" y="182" width="280" height="40" fill="#3a5a72" opacity="0.6"/>
+          <text x="140" y="206" text-anchor="middle" fill="#fff" font-weight="600">overflow → tokens dropped ✗</text>
+        </g>
+        <text x="140" y="246" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#b03d1a">↑ either pad with zeros, or drop tokens</text>
+      </g>
+      <!-- RIGHT: block-sparse matmul (variable block sizes) -->
+      <g transform="translate(400, 60)">
+        <text x="140" y="-4" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#506348" letter-spacing="0.1em">BLOCK-SPARSE MATMUL</text>
+        <text x="140" y="10" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#3d3830">each block sized to its actual load</text>
+        <g font-family="JetBrains Mono,monospace" font-size="9">
+          <rect x="0" y="30" width="280" height="44" fill="#fcf8ee" stroke="#d9cfba"/>
+          <text x="-6" y="56" text-anchor="end" fill="#7a7165">E₁</text>
+          <rect x="2" y="32" width="200" height="40" fill="#506348"/>
+          <text x="102" y="56" text-anchor="middle" fill="#fff" font-weight="600">used</text>
+
+          <rect x="0" y="80" width="280" height="44" fill="#fcf8ee" stroke="#d9cfba"/>
+          <text x="-6" y="106" text-anchor="end" fill="#7a7165">E₂</text>
+          <rect x="2" y="82" width="276" height="40" fill="#b03d1a"/>
+          <text x="140" y="106" text-anchor="middle" fill="#fff" font-weight="600">used</text>
+
+          <rect x="0" y="130" width="280" height="44" fill="#fcf8ee" stroke="#d9cfba"/>
+          <text x="-6" y="156" text-anchor="end" fill="#7a7165">E₃</text>
+          <rect x="2" y="132" width="100" height="40" fill="#b88528"/>
+          <text x="52" y="156" text-anchor="middle" fill="#fff" font-weight="600">used</text>
+
+          <rect x="0" y="180" width="280" height="44" fill="#fcf8ee" stroke="#d9cfba"/>
+          <text x="-6" y="206" text-anchor="end" fill="#7a7165">E₄</text>
+          <rect x="2" y="182" width="240" height="40" fill="#3a5a72"/>
+          <text x="122" y="206" text-anchor="middle" fill="#fff" font-weight="600">used (full)</text>
+        </g>
+        <text x="140" y="246" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#506348">↑ no padding, no dropping</text>
+      </g>
+      <!-- Bottom comparison summary -->
+      <g transform="translate(60, 330)">
+        <rect x="0" y="0" width="600" height="36" rx="4" fill="#fdf3da" stroke="#b88528"/>
+        <text x="300" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Custom GPU kernels handle the irregular block layout · same FLOPs, less wasted work</text>
+      </g>
+    </svg>
+    <figcaption>
+      The Megablocks reformulation. Standard MoE implementations use batched matmul, which assumes every expert processes the same number of tokens — so under-loaded experts are padded and over-loaded experts overflow. Megablocks reformulates the whole MoE layer as one block-sparse matmul where each (expert × tokens) block is sized to its actual load. No padding, no dropping, substantial speedup.
+      <span class="src">Original SVG · concept after Gale et al. (2022), <em>Megablocks</em></span>
+    </figcaption>
+  </figure>
+
+  <p>Megablocks (2022) reformulates the whole MoE layer as a single <em>block-sparse</em> matmul, with custom GPU kernels that handle the irregular block shapes. The result: no token dropping, no wasted padding, and substantial speedups over the naive batched-matmul approach.</p>
+
+  <h3>Distillation, for serving</h3>
+
+  <p>Even with all of these tricks, an MoE is memory-hungry to serve. A common workaround at deployment time is to <em>distill</em> the trained MoE back into a dense model with fewer parameters but similar quality. The Switch Transformer paper showed you can keep 30–40% of the sparsity benefit this way. You get a small dense model that is much easier to serve, while the MoE was just a temporary scaffolding for getting there cheaply.</p>
+</section>
+
+<!-- ============ 13. CHOOSE ============ -->
+<section id="choose">
+  <div class="chapter-mark"><span class="num">13</span> Decision guide</div>
+  <h2>When should you <em>actually</em> reach for an MoE?</h2>
+
+  <div class="compare">
+    <div class="dense">
+      <h4>Choose dense when…</h4>
+      <ul>
+        <li>You're memory-constrained (a single GPU, edge device, laptop).</li>
+        <li>You serve few users at low throughput.</li>
+        <li>You need a small fine-tuning dataset to work well.</li>
+        <li>Latency-per-token, not aggregate throughput, is the metric.</li>
+        <li>You want simple, well-understood training dynamics.</li>
+      </ul>
+    </div>
+    <div class="sparse">
+      <h4>Choose MoE when…</h4>
+      <ul>
+        <li>You have a fixed pretraining compute budget and want max quality.</li>
+        <li>You're serving many users at high throughput on a multi-GPU cluster.</li>
+        <li>You can afford the memory to load all experts.</li>
+        <li>Your downstream use will involve diverse tasks (instruction tuning shines).</li>
+        <li>You can invest in the systems engineering for expert parallelism.</li>
+      </ul>
+    </div>
+  </div>
+
+  <p>Crucially: <strong>do not directly compare parameter counts</strong> between dense and sparse models. A dense 13B parameter model and a sparse "8x7B" MoE are not comparable in any single number. The MoE has ~47B total parameters, ~12B active per token, and learns differently from either a 13B or a 47B dense baseline. Pick a metric — quality at fixed pretraining compute, latency at fixed batch size, memory at fixed quality — and compare on that metric.</p>
+</section>
+
+<!-- ============ 14. PLAYGROUND ============ -->
+<section id="playground">
+  <div class="chapter-mark"><span class="num">14</span> Playground</div>
+  <h2>Watch some tokens get <em>routed</em></h2>
+
+  <p>Type a sentence below. Each word becomes a token; we'll simulate a top-<em>k</em> router with a tunable number of experts and show you which expert(s) each token gets dispatched to. (The routing here is a fixed deterministic hash of each word, so the same word always lands at the same expert — much like a reasonably trained router would do — but a real one would also be using the surrounding context.)</p>
+
+  <div class="demo">
+    <input type="text" id="demo-input" value="The mixture of experts routes each token to a small subset of specialists.">
+    <div class="controls">
+      <label>Experts (N): <input type="number" id="demo-n" min="2" max="12" value="8"></label>
+      <label>Top-k: <input type="number" id="demo-k" min="1" max="4" value="2"></label>
+      <button id="demo-go">Re-route</button>
+    </div>
+    <div class="output" id="demo-output"></div>
+    <div class="expert-legend" id="demo-legend"></div>
+  </div>
+
+  <p class="small">Notice: short, common words ("the", "of", "a") tend to land at consistent experts — a router would learn to specialize an expert on function words. Open-class words spread across experts. Try changing $N$ from 8 to 4: each expert now handles a wider variety of tokens. Try $k=1$ vs $k=2$: at $k=2$, each token's compute doubles, but you get richer mixing.</p>
+
+  <div class="aside insight" style="text-align:center;padding:28px">
+    <div class="label">Want the full experience?</div>
+    <p style="font-size:18px;margin-bottom:16px">The widget above gives you a quick feel for routing. The <strong>full simulator</strong> adds animated token particles, multi-layer traversal, capacity overflow, a load-balancing toggle, and post-run insights.</p>
+    <a href="moe_simulator.html" style="display:inline-block;background:var(--ink);color:var(--paper);padding:12px 28px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;transition:background .2s" onmouseover="this.style.background='var(--rust)'" onmouseout="this.style.background='var(--ink)'">Launch MoE Routing Simulator</a>
+  </div>
+</section>
+
+<div class="ornament">⁂ ⁂ ⁂</div>
+
+<!-- ============ 15. TAKEAWAYS ============ -->
+<section id="takeaways">
+  <div class="chapter-mark"><span class="num">15</span> Closing</div>
+  <h2>Takeaways &amp; <em>exercises</em></h2>
+
+  <h3>The six things to remember</h3>
+
+  <ol class="fancy">
+    <li><strong>An MoE replaces the FFN sublayer of a transformer block</strong> with a router and a panel of expert FFNs. Attention and the rest are unchanged.</li>
+    <li><strong>Sparsity decouples capacity from compute.</strong> Total parameters can be huge; per-token compute scales with $k$, not $N$. Memory still scales with $N$.</li>
+    <li><strong>Load balancing is not optional.</strong> Without an auxiliary loss and a capacity cap, the router collapses to a few favored experts and the architecture loses its purpose.</li>
+    <li><strong>Pretraining is the easy part; fine-tuning is the hard part.</strong> Sparse models overfit easily on small datasets; instruction tuning works exceptionally well; many practical tricks (freezing, dropout asymmetry, smaller batches) exist.</li>
+    <li><strong>MoE is a systems-level architecture.</strong> Its real-world efficiency depends on expert parallelism, all-to-all communication, capacity factor tuning, and (often) custom kernels like Megablocks.</li>
+    <li><strong>You can watch it work.</strong> A few PyTorch hooks on the router expose every routing decision. Domain-dependent routing, expert distinctness, near-uniform softmax, and depth-dependent specialization are all directly observable on a real model in a single Colab session.</li>
+  </ol>
+
+  <h3>Exercises for the reader</h3>
+
+  <div class="aside check">
+    <div class="label">Conceptual</div>
+    <p><strong>1.</strong> Mixtral 8×7B has eight experts of seven billion parameters each, but the model has 47B parameters total — not 56B. Where do the missing 9B parameters go (or rather, where would they have been in a hypothetical "fully duplicated" version)?</p>
+    <p><strong>2.</strong> Suppose you double $N$ from 8 to 16 while holding $k=2$ fixed. What happens to: (a) total parameters, (b) per-token compute (FLOPs), (c) memory required to hold the model, (d) the load-balancing problem?</p>
+    <p><strong>3.</strong> The auxiliary load-balance loss has a hyperparameter weight. What happens if it's too small? What happens if it's too large?</p>
+  </div>
+
+  <div class="aside check">
+    <div class="label">Practical</div>
+    <p><strong>4.</strong> Sketch the all-to-all communication pattern for one MoE layer with 4 GPUs and 4 experts (one expert per GPU). For a batch of 100 tokens, how many tokens does each GPU send and receive?</p>
+    <p><strong>5.</strong> The capacity factor formula gives <em>tokens / N × capacity factor</em>. With 8 experts, a batch of 1024 tokens, and a capacity factor of 1.25, how many tokens can each expert process? What happens to the 129th token assigned to a full expert?</p>
+    <p><strong>6.</strong> If you were fine-tuning a Mixtral-style model for a niche legal-document task with only 5,000 training examples, what specific precautions from §10 would you take, and in what order would you try them?</p>
+  </div>
+
+  <div class="aside check">
+    <div class="label">Hands-on</div>
+    <p><strong>7.</strong> Open the live-moe-demo notebook on Colab and re-run it on Qwen1.5-MoE with your own four prompts. Try four prompts <em>within</em> the same domain (e.g. four math problems of varying difficulty). Does the routing similarity collapse to near-1.0 across all layers, or do you still see middle-layer divergence? What does that tell you about how fine-grained the router's specialization actually is?</p>
+    <p><strong>8.</strong> In the same notebook, replace top-4 with manual top-1 (just take <code>argmax</code> over the router logits) and re-plot expert utilization. How much more skewed does the distribution become? This gives you intuition for why Switch had to compensate with capacity factors and the auxiliary loss.</p>
+  </div>
+
+  <h3>Further reading, in order</h3>
+
+  <ul class="fancy">
+    <li>Jacobs, Jordan, Nowlan, Hinton (1991) — <em>Adaptive Mixtures of Local Experts</em>. The original.</li>
+    <li>Shazeer et al. (2017) — <em>Outrageously Large Neural Networks</em>. The first big NLP MoE.</li>
+    <li>Lepikhin et al. (2020) — <em>GShard</em>. First production-scale transformer MoE.</li>
+    <li>Fedus, Zoph, Shazeer (2021) — <em>Switch Transformer</em>. The simplification to top-1.</li>
+    <li>Zoph et al. (2022) — <em>ST-MoE</em>. The stability and analysis paper.</li>
+    <li>Gale et al. (2022) — <em>Megablocks</em>. The block-sparse-matmul rewrite.</li>
+    <li>Shen et al. (2023) — <em>MoEs Meet Instruction Tuning</em>. The fine-tuning rehabilitation.</li>
+    <li>P. Kulkarni — <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/10-mixture-of-experts/live-moe-demo.ipynb"><em>live-moe-demo</em> notebook</a>. The hands-on instrumentation of Qwen1.5-MoE used in §10. Run it yourself in Colab on a T4.</li>
+  </ul>
+</section>
+
+<footer>
+  <h3 style="font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:18px;color:#1a1814;margin-bottom:14px">References &amp; acknowledgments</h3>
+
+  <p style="margin-bottom:14px">The conceptual scaffolding of this tutorial follows the structure of the excellent Hugging Face blog post <em>Mixture of Experts Explained</em> (Sanseviero, Tunstall, Schmid, Mangrulkar, Belkada, Cuenca, December 2023) — read it at <a href="https://huggingface.co/blog/moe">huggingface.co/blog/moe</a>. Their post was the starting point; the prose, exercises, simulator, and §10 field-notes section are original to this tutorial, and every figure here is an original SVG redraw rather than a reuse.</p>
+
+  <p style="margin-bottom:8px">Source papers cited throughout, in chronological order:</p>
+  <ul style="list-style:none;padding-left:0;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.7;color:#3d3830">
+    <li>· Jacobs, Jordan, Nowlan, Hinton (1991). <em>Adaptive Mixtures of Local Experts</em>. Neural Computation.</li>
+    <li>· Eigen, Ranzato, Sutskever (2013). <em>Learning Factored Representations in a Deep Mixture of Experts</em>.</li>
+    <li>· Shazeer et al. (2017). <em>Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer</em>.</li>
+    <li>· Lepikhin et al. (2020). <em>GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding</em>.</li>
+    <li>· Fedus, Zoph, Shazeer (2021). <em>Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity</em>.</li>
+    <li>· Du et al. (2022). <em>GLaM: Efficient Scaling of Language Models with Mixture-of-Experts</em>.</li>
+    <li>· Zoph et al. (2022). <em>ST-MoE: Designing Stable and Transferable Sparse Expert Models</em>.</li>
+    <li>· Gale, Narayanan, Young, Zaharia (2022). <em>MegaBlocks: Efficient Sparse Training with Mixture-of-Experts</em>.</li>
+    <li>· Zhou et al. (2022). <em>Mixture-of-Experts with Expert Choice Routing</em>.</li>
+    <li>· Shen et al. (2023). <em>Mixture-of-Experts Meets Instruction Tuning: A Winning Combination for Large Language Models</em>.</li>
+    <li>· Jiang et al. (2024). <em>Mixtral of Experts</em>.</li>
+    <li>· DeepSeek-AI (2024). <em>DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model</em>.</li>
+  </ul>
+
+  <p style="margin-top:14px;margin-bottom:14px">The empirical findings in §10 (<em>Field notes</em>) summarize the live MoE inspection notebook by P. Kulkarni — <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/10-mixture-of-experts/live-moe-demo.ipynb">live-moe-demo.ipynb</a> — which instruments Qwen1.5-MoE-A2.7B-Chat with PyTorch hooks. Numerical observations (60 experts, 384 selections, top expert at 22, etc.) are measurements taken from running that notebook; the SVG visualizations of those measurements are original. The Qwen1.5-MoE-A2.7B-Chat model is © Alibaba (Apache 2.0).</p>
+
+  <hr style="border:none;border-top:1px solid var(--rule);margin:24px 0">
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#3d3830">
+    <div>
+      <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7165;margin-bottom:6px">Author</div>
+      <div>Prashant Kulkarni<br><span style="color:#7a7165">with help from Claude Opus (Anthropic)</span></div>
+    </div>
+    <div>
+      <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7165;margin-bottom:6px">License</div>
+      <div>
+        <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC&nbsp;BY-NC&nbsp;4.0</a><br>
+        <span style="color:#7a7165">Free to share &amp; adapt for non-commercial use, with attribution.</span>
+      </div>
+    </div>
+  </div>
+
+  <p style="margin-top:18px;font-size:11px;color:#7a7165;font-family:'JetBrains Mono',monospace">
+    Part of the <em style="font-family:'Fraunces',serif;font-size:13px">learn-generative-ai</em> tutorial series · Chapter 10 of 10 · v1.0
+  </p>
+</footer>
+
+</main>
+</div>
+
+<script>
+// ====== Interactive routing demo ======
+const COLORS = ['#b03d1a','#506348','#b88528','#3a5a72','#8a3a5e','#5e7a3a','#7a3a8a','#3a8a7a','#a55a2a','#5a3aa5','#aa7aaa','#3aaa5a'];
+
+function hashCode(str){
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = ((h<<5)+h) + str.charCodeAt(i);
+  return Math.abs(h);
+}
+
+function tokenize(text){
+  // simple word-level tokenization, keep punctuation as its own tokens
+  return text.match(/\w+|[.,!?;:]/g) || [];
+}
+
+function routeToken(token, n, k){
+  // deterministic pseudo-routing: hash-based scores, pick top-k
+  const scores = [];
+  for (let i = 0; i < n; i++){
+    const h = hashCode(token.toLowerCase() + '|' + i);
+    scores.push({expert: i, score: (h % 1000) / 1000});
+  }
+  scores.sort((a,b) => b.score - a.score);
+  return scores.slice(0, k).map(s => s.expert);
+}
+
+function render(){
+  const text = document.getElementById('demo-input').value;
+  const n = Math.max(2, Math.min(12, parseInt(document.getElementById('demo-n').value) || 8));
+  const k = Math.max(1, Math.min(n, parseInt(document.getElementById('demo-k').value) || 2));
+
+  const tokens = tokenize(text);
+  const out = document.getElementById('demo-output');
+  out.innerHTML = '';
+
+  tokens.forEach((tok, idx) => {
+    const experts = routeToken(tok, n, k);
+    const primary = experts[0];
+    const span = document.createElement('span');
+    span.className = 'token';
+    span.style.background = COLORS[primary % COLORS.length];
+    span.style.animationDelay = (idx * 0.025) + 's';
+    const expertLabels = experts.map(e => 'E'+e).join('+');
+    span.innerHTML = `${tok} <span class="arrow">→</span> <span class="expert">${expertLabels}</span>`;
+    out.appendChild(span);
+  });
+
+  // Legend
+  const legend = document.getElementById('demo-legend');
+  legend.innerHTML = '';
+  for (let i = 0; i < n; i++){
+    const item = document.createElement('span');
+    item.innerHTML = `<span class="swatch" style="background:${COLORS[i % COLORS.length]}"></span>Expert ${i}`;
+    legend.appendChild(item);
+  }
+}
+
+document.getElementById('demo-go').addEventListener('click', render);
+document.getElementById('demo-input').addEventListener('input', render);
+document.getElementById('demo-n').addEventListener('change', render);
+document.getElementById('demo-k').addEventListener('change', render);
+window.addEventListener('DOMContentLoaded', render);
+
+// Active TOC highlighting
+const sections = document.querySelectorAll('section[id]');
+const tocLinks = document.querySelectorAll('.toc a');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting){
+      tocLinks.forEach(l => l.style.color = '');
+      const active = document.querySelector(`.toc a[href="#${e.target.id}"]`);
+      if (active) active.style.color = 'var(--rust)';
+    }
+  });
+}, { rootMargin: '-30% 0px -60% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

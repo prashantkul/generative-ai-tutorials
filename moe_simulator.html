@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MoE Routing Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f4ede0;
+  --card:#fbf6ec;
+  --ink:#1a1814;
+  --ink-2:#3d3830;
+  --ink-3:#7a7165;
+  --rule:#d9cfba;
+  --rust:#b03d1a;
+  --rust-soft:#dba287;
+  --sage:#506348;
+  --sage-soft:#a4b196;
+  --gold:#b88528;
+  --gold-soft:#e8c879;
+  --highlight:#fde8b4;
+  --shadow: 0 1px 0 rgba(26,24,20,.04), 0 8px 30px -10px rgba(26,24,20,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Newsreader',Georgia,serif;
+  background:var(--paper);
+  color:var(--ink);
+  font-size:16px;
+  line-height:1.5;
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(184,133,40,.05), transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(80,99,72,.04), transparent 50%);
+  background-attachment:fixed;
+  min-height:100vh;
+}
+.app{max-width:1320px;margin:0 auto;padding:32px 24px 80px}
+
+/* Header */
+header{margin-bottom:28px;padding-bottom:18px;border-bottom:1px solid var(--rule)}
+.eyebrow{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--rust);margin-bottom:8px;
+}
+h1{
+  font-family:'Fraunces',serif;font-weight:300;
+  font-size:clamp(36px,5vw,56px);line-height:1;letter-spacing:-.02em;
+  font-variation-settings:"opsz" 144, "SOFT" 50;
+}
+h1 em{font-style:italic;color:var(--rust);font-weight:400}
+.tagline{
+  font-family:'Fraunces',serif;font-style:italic;
+  font-size:18px;color:var(--ink-2);margin-top:8px;font-weight:300;
+}
+
+/* Controls */
+.controls{
+  display:grid;grid-template-columns: 1fr 320px;gap:20px;margin-bottom:20px;
+}
+@media (max-width:980px){.controls{grid-template-columns:1fr}}
+.panel{
+  background:var(--card);border:1px solid var(--rule);
+  border-radius:8px;padding:18px 20px;box-shadow:var(--shadow);
+}
+.panel h3{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;text-transform:uppercase;letter-spacing:.18em;
+  color:var(--rust);margin-bottom:12px;
+}
+.prompt-box input{
+  width:100%;padding:10px 14px;
+  border:1px solid var(--rule);background:#fff;
+  font-family:'Newsreader',serif;font-size:16px;color:var(--ink);
+  border-radius:4px;margin-bottom:10px;
+}
+.prompt-box input:focus{outline:none;border-color:var(--rust)}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.presets button{
+  padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;
+  background:transparent;color:var(--ink-2);
+  border:1px solid var(--rule);border-radius:14px;cursor:pointer;transition:all .15s;
+}
+.presets button:hover{background:var(--rust);color:#fff;border-color:var(--rust)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.actions button{
+  padding:8px 16px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em;
+  border-radius:4px;cursor:pointer;border:none;transition:all .15s;
+}
+.actions .run{background:var(--ink);color:var(--paper);min-width:110px}
+.actions .run:hover{background:var(--rust)}
+.actions .secondary{background:transparent;color:var(--ink-2);border:1px solid var(--rule)}
+.actions .secondary:hover{border-color:var(--rust);color:var(--rust)}
+
+/* Settings */
+.settings{display:flex;flex-direction:column;gap:9px}
+.slider{
+  display:grid;grid-template-columns:84px 1fr 36px;
+  align-items:center;gap:10px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+}
+.slider label{color:var(--ink-2);font-weight:500}
+.slider input[type=range]{
+  -webkit-appearance:none;appearance:none;
+  background:var(--rule);height:3px;border-radius:2px;
+}
+.slider input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:14px;height:14px;border-radius:50%;
+  background:var(--rust);cursor:pointer;
+}
+.slider input[type=range]::-moz-range-thumb{
+  width:14px;height:14px;border-radius:50%;
+  background:var(--rust);border:none;cursor:pointer;
+}
+.slider .value{color:var(--rust);text-align:right;font-weight:600}
+.toggle{
+  display:flex;align-items:center;gap:10px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);
+  margin-top:4px;cursor:pointer;
+}
+.toggle input[type=checkbox]{
+  appearance:none;width:36px;height:18px;
+  background:var(--rule);border-radius:10px;position:relative;cursor:pointer;
+  transition:background .15s;
+}
+.toggle input[type=checkbox]:checked{background:var(--sage)}
+.toggle input[type=checkbox]::after{
+  content:"";position:absolute;top:2px;left:2px;
+  width:14px;height:14px;background:#fff;border-radius:50%;transition:left .15s;
+}
+.toggle input[type=checkbox]:checked::after{left:20px}
+
+/* Visualization */
+.viz-wrap{
+  background:var(--card);border:1px solid var(--rule);
+  border-radius:8px;padding:14px;margin-bottom:20px;box-shadow:var(--shadow);
+  position:relative;
+}
+#viz{width:100%;height:auto;display:block}
+
+/* Stats */
+.stats{display:grid;grid-template-columns: 320px 1fr 1fr;gap:20px}
+@media (max-width:1100px){.stats{grid-template-columns:1fr}}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric{
+  text-align:center;padding:10px 8px;
+  background:var(--paper);border-radius:4px;
+}
+.metric-label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--ink-3);
+}
+.metric-value{
+  font-family:'Fraunces',serif;font-size:22px;font-weight:500;color:var(--ink);margin-top:4px;
+}
+.metric-sub{
+  font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3);margin-top:2px;
+}
+
+/* Utilization bars */
+.util-list{display:flex;flex-direction:column;gap:5px}
+.util-row{
+  display:grid;grid-template-columns:36px 1fr 30px;
+  align-items:center;gap:8px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+}
+.util-bar{
+  height:14px;background:var(--paper);border-radius:7px;
+  overflow:visible;position:relative;
+}
+.util-bar .fill{
+  height:100%;border-radius:7px;
+  transition:width .25s ease-out;
+}
+.util-bar .ideal{
+  position:absolute;top:-3px;height:20px;width:1px;
+  background:var(--rust);opacity:.7;
+}
+.util-bar .ideal::after{
+  content:"ideal";position:absolute;top:-12px;left:-12px;
+  font-size:8px;color:var(--rust);font-family:inherit;
+}
+.util-row .label{font-weight:600}
+.util-row .count{color:var(--ink-3);text-align:right}
+
+/* Narration */
+.narration{
+  background:#fff;border-radius:4px;padding:10px 12px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.55;
+  color:var(--ink-2);height:200px;overflow-y:auto;border:1px solid var(--rule);
+}
+.narration .step{margin-bottom:2px;padding-left:12px;position:relative}
+.narration .step::before{content:"›";position:absolute;left:0;color:var(--rust)}
+.narration .step.token{color:var(--ink);font-weight:600;margin-top:6px}
+.narration .step.indent{padding-left:24px}
+.narration .step.indent::before{content:""}
+.narration .step.event{color:var(--gold);font-weight:600}
+.narration .step.warn{color:var(--rust);font-weight:600}
+.narration:empty::before{content:"Press Run — the trace will appear here.";color:var(--ink-3);font-style:italic}
+
+/* Insights */
+.insights{
+  margin-top:12px;padding:14px;
+  background:linear-gradient(180deg,#fdf3da,#fbf6ec);
+  border:1px solid var(--gold);border-radius:6px;
+  font-family:'Fraunces',serif;font-style:italic;font-size:14px;line-height:1.5;
+  color:var(--ink-2);display:none;
+}
+.insights.visible{display:block;animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.insights .label{
+  font-family:'JetBrains Mono',monospace;font-style:normal;
+  font-size:10px;text-transform:uppercase;letter-spacing:.15em;
+  color:var(--gold);margin-bottom:6px;font-weight:600;
+}
+
+/* Footer / hints */
+.hints{
+  margin-top:20px;padding:14px 18px;
+  background:var(--card);border:1px dashed var(--rule);border-radius:6px;
+  font-family:'Fraunces',serif;font-style:italic;
+  font-size:14px;line-height:1.55;color:var(--ink-2);
+}
+.hints strong{
+  font-family:'JetBrains Mono',monospace;font-style:normal;font-weight:600;
+  font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--rust);
+}
+.hints ul{margin:6px 0 0 0;padding-left:20px;list-style:none}
+.hints li{padding:3px 0;position:relative;padding-left:14px}
+.hints li::before{content:"→";position:absolute;left:0;color:var(--rust);font-style:normal}
+
+/* SVG element styles */
+.tok-bg{transition:fill .25s, stroke .25s}
+.exp-circle{transition:fill .35s, opacity .35s, stroke-width .25s}
+.exp-circle.dim{opacity:.45}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div class="eyebrow">interactive demo · companion to the tutorial</div>
+  <h1>MoE Routing <em>Simulator</em></h1>
+  <p class="tagline">Watch tokens travel through a sparse mixture of experts, layer by layer. Adjust the knobs and see what changes.</p>
+</header>
+
+<!-- Controls -->
+<div class="controls">
+  <div class="panel prompt-box">
+    <h3>Input</h3>
+    <input type="text" id="prompt" value="What is 2 + 2 ?" placeholder="Type a sentence...">
+    <div class="presets">
+      <button data-preset="math">math · arithmetic</button>
+      <button data-preset="code">code · fibonacci</button>
+      <button data-preset="creative">creative · narrative</button>
+      <button data-preset="factual">factual · capital</button>
+    </div>
+    <div class="actions">
+      <button class="run" id="btn-run">▶ Run</button>
+      <button class="secondary" id="btn-reset">↻ Reset</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Settings</h3>
+    <div class="settings">
+      <div class="slider">
+        <label>Experts (N)</label>
+        <input type="range" id="cfg-n" min="3" max="8" value="6">
+        <span class="value" id="val-n">6</span>
+      </div>
+      <div class="slider">
+        <label>Top-k</label>
+        <input type="range" id="cfg-k" min="1" max="4" value="2">
+        <span class="value" id="val-k">2</span>
+      </div>
+      <div class="slider">
+        <label>Layers (L)</label>
+        <input type="range" id="cfg-l" min="1" max="4" value="3">
+        <span class="value" id="val-l">3</span>
+      </div>
+      <div class="slider">
+        <label>Capacity</label>
+        <input type="range" id="cfg-c" min="100" max="200" value="150">
+        <span class="value" id="val-c">1.50</span>
+      </div>
+      <div class="slider">
+        <label>Speed (ms)</label>
+        <input type="range" id="cfg-s" min="40" max="500" value="180">
+        <span class="value" id="val-s">180</span>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="cfg-bal" checked>
+        <span>Load balancing on</span>
+      </label>
+    </div>
+  </div>
+</div>
+
+<!-- Visualization -->
+<div class="viz-wrap">
+  <svg id="viz" viewBox="0 0 1280 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
+</div>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="panel">
+    <h3>Expert utilization · last layer</h3>
+    <div class="util-list" id="util-list"></div>
+    <div class="insights" id="insights">
+      <div class="label">Observation</div>
+      <div id="insight-text"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Counters</h3>
+    <div class="metric-grid">
+      <div class="metric">
+        <div class="metric-label">tokens routed</div>
+        <div class="metric-value" id="m-tokens">0</div>
+        <div class="metric-sub" id="m-tokens-sub">of 0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">active params</div>
+        <div class="metric-value" id="m-active">—</div>
+        <div class="metric-sub">of total</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">FLOPs saved</div>
+        <div class="metric-value" id="m-flops">—</div>
+        <div class="metric-sub">vs. dense FFN</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">dropped</div>
+        <div class="metric-value" id="m-dropped">0</div>
+        <div class="metric-sub">capacity overflow</div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Trace</h3>
+    <div class="narration" id="narration"></div>
+  </div>
+</div>
+
+<div class="hints">
+  <strong>Try these experiments</strong>
+  <ul>
+    <li>Run <em>math</em> and then <em>code</em> — note which experts they share. Then run <em>creative</em> and see how it routes elsewhere.</li>
+    <li>Toggle <em>load balancing off</em> and re-run a few times. Watch one expert capture nearly all the traffic — the "rich-get-richer" collapse.</li>
+    <li>Set top-<em>k</em> from 1 to 4. The active-params and FLOPs numbers update live.</li>
+    <li>Lower the <em>capacity factor</em> below 1.25. Tokens whose preferred expert is full get dropped — see the dropped counter rise.</li>
+    <li>Watch the <em>trace</em> panel: each step shows which experts the router picked for each token, layer by layer.</li>
+  </ul>
+</div>
+
+</div>
+
+<script>
+"use strict";
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const COLORS = ['#b03d1a','#506348','#b88528','#3a5a72','#8a3a5e','#5e7a3a','#7a3a8a','#3a8a7a'];
+
+const PRESETS = {
+  math: 'What is 2 + 2 ?',
+  code: 'def fibonacci ( n ) :',
+  creative: 'Once upon a time in a dark forest ,',
+  factual: 'The capital of France is',
+};
+
+// Per-expert FFN parameters (illustrative number, in millions)
+const PARAMS_PER_EXPERT_M = 14; // each expert ~14M params
+const PARAMS_ROUTER_M = 0.1;
+const PARAMS_ATTN_M = 8; // shared attention etc per layer
+
+const state = {
+  cfg: { N:6, k:2, L:3, capacity:1.50, balance:true, speed:180 },
+  tokens: [],
+  routing: [],     // [tokenIdx][layerIdx] = [expertIdx,...]
+  utilization: [], // [layerIdx][expertIdx] = count
+  dropped: 0,
+  curToken: 0,
+  curLayer: 0,
+  microStep: 0,
+  running: false,
+  finished: false,
+  built: false,
+  timer: null,
+  particleId: 0,
+};
+
+// === Tokenization & types ===
+function tokenize(s){
+  return (s.match(/\w+|[+\-*/=<>(){}[\].,!?;:]/g) || []).map((t,i)=>({
+    text: t, type: tokenType(t), idx: i,
+  }));
+}
+function tokenType(t){
+  if (/^\d+$/.test(t)) return 'num';
+  if (/^[+\-*/=<>]$/.test(t)) return 'op';
+  if (/^[(){}[\]]$/.test(t)) return 'paren';
+  if (/^(def|return|import|class|if|else|for|while|fibonacci|capital|France)$/i.test(t)) return 'kw';
+  if (/^[.,!?;:]$/.test(t)) return 'punct';
+  if (/^(the|a|an|of|to|in|on|at|is|once|upon|time)$/i.test(t)) return 'common';
+  return 'word';
+}
+
+// === Routing simulation ===
+function hashStr(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h)+s.charCodeAt(i);return Math.abs(h);}
+
+function computeLogits(token, layer, N, useBalanceBias=null) {
+  // Type-biased base scores: similar token types route to similar experts
+  // 'num', 'op', 'kw' all share a "structured" cluster; 'word', 'common' share a "narrative" cluster
+  const cluster = ({num:'A',op:'A',kw:'A',paren:'A',
+                    word:'B',common:'B',
+                    punct:'C'})[token.type] || 'B';
+  const clusterSeed = hashStr(cluster + '|L' + layer);
+  const clusterCenter = clusterSeed % N;
+  const logits = [];
+  for (let i = 0; i < N; i++) {
+    const base = (hashStr(token.text.toLowerCase() + '|' + layer + '|' + i) % 10000) / 10000 * 2 - 1;
+    const dist = Math.min((i - clusterCenter + N) % N, (clusterCenter - i + N) % N);
+    const clusterBoost = dist === 0 ? 1.6 : (dist === 1 ? 0.8 : 0);
+    let score = base + clusterBoost;
+    if (useBalanceBias) score += useBalanceBias[i];
+    logits.push(score);
+  }
+  return logits;
+}
+
+function precomputeRouting() {
+  const {N, k, L, capacity, balance} = state.cfg;
+  const T = state.tokens.length;
+  const capPerExpert = Math.max(1, Math.ceil((T * k) / N * capacity));
+  
+  state.routing = state.tokens.map(() => Array(L).fill(null));
+  state.utilization = Array.from({length: L}, () => Array(N).fill(0));
+  state.dropped = 0;
+
+  for (let layer = 0; layer < L; layer++) {
+    const layerCapLoad = Array(N).fill(0);
+    for (let t = 0; t < T; t++) {
+      // For "balance off": add cumulative-use bonus (rich-get-richer)
+      let bias = null;
+      if (!balance) {
+        bias = Array(N).fill(0);
+        for (let i = 0; i < N; i++) bias[i] = state.utilization[layer][i] * 0.45;
+      }
+      const logits = computeLogits(state.tokens[t], layer, N, bias);
+      const sorted = logits.map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v);
+      const selected = [];
+      for (const pick of sorted) {
+        if (selected.length >= k) break;
+        if (layerCapLoad[pick.i] >= capPerExpert) continue;
+        selected.push(pick.i);
+        layerCapLoad[pick.i]++;
+      }
+      state.routing[t][layer] = selected;
+      for (const e of selected) state.utilization[layer][e]++;
+      if (selected.length < k) state.dropped += (k - selected.length);
+    }
+  }
+}
+
+// === Layout helpers ===
+function dims() {
+  const W = 1280, H = 500;
+  const tokColX = 90;
+  const layerStartX = 220, layerEndX = W - 90;
+  const L = state.cfg.L, N = state.cfg.N;
+  const T = state.tokens.length || 1;
+  const layerWidth = (layerEndX - layerStartX) / L;
+  const expertSpacing = Math.min(54, (H - 110) / N);
+  const tokenSpacing = Math.min(34, (H - 90) / Math.max(T, 1));
+  return { W, H, tokColX, layerStartX, layerEndX, layerWidth, expertSpacing, tokenSpacing, N, L, T };
+}
+function layerCenterX(idx) { const d = dims(); return d.layerStartX + d.layerWidth*idx + d.layerWidth/2; }
+function expertY(idx) { const d = dims(); const total = d.expertSpacing*d.N; return (d.H-total)/2 + d.expertSpacing/2 + idx*d.expertSpacing; }
+function tokenY(idx) { const d = dims(); const total = d.tokenSpacing*d.T; return (d.H-total)/2 + d.tokenSpacing/2 + idx*d.tokenSpacing; }
+function routerY() { return 60; }
+
+// === Build SVG ===
+function buildSVG() {
+  const svg = document.getElementById('viz');
+  svg.innerHTML = '';
+  const d = dims();
+  
+  // Layer bands
+  for (let l = 0; l < d.L; l++) {
+    const cx = layerCenterX(l);
+    const lw = d.layerWidth - 24;
+    const band = document.createElementNS(SVG_NS, 'rect');
+    band.setAttribute('x', cx - lw/2);
+    band.setAttribute('y', 36);
+    band.setAttribute('width', lw);
+    band.setAttribute('height', d.H - 56);
+    band.setAttribute('fill', '#fcf8ee');
+    band.setAttribute('stroke', '#e2d8c2');
+    band.setAttribute('stroke-width', 1);
+    band.setAttribute('rx', 6);
+    svg.appendChild(band);
+    
+    const lbl = document.createElementNS(SVG_NS, 'text');
+    lbl.setAttribute('x', cx);
+    lbl.setAttribute('y', 24);
+    lbl.setAttribute('text-anchor', 'middle');
+    lbl.setAttribute('font-family', 'JetBrains Mono, monospace');
+    lbl.setAttribute('font-size', 10);
+    lbl.setAttribute('fill', '#7a7165');
+    lbl.setAttribute('letter-spacing', '0.15em');
+    lbl.textContent = `MoE LAYER ${l+1}`;
+    svg.appendChild(lbl);
+    
+    // Router box at top of layer
+    const r = document.createElementNS(SVG_NS, 'rect');
+    r.setAttribute('x', cx - 36);
+    r.setAttribute('y', 48);
+    r.setAttribute('width', 72);
+    r.setAttribute('height', 22);
+    r.setAttribute('rx', 3);
+    r.setAttribute('fill', '#fff');
+    r.setAttribute('stroke', '#b03d1a');
+    r.setAttribute('stroke-width', 1);
+    r.setAttribute('id', `router-${l}`);
+    svg.appendChild(r);
+    
+    const rlbl = document.createElementNS(SVG_NS, 'text');
+    rlbl.setAttribute('x', cx);
+    rlbl.setAttribute('y', 63);
+    rlbl.setAttribute('text-anchor', 'middle');
+    rlbl.setAttribute('font-family', 'JetBrains Mono, monospace');
+    rlbl.setAttribute('font-size', 10);
+    rlbl.setAttribute('fill', '#b03d1a');
+    rlbl.setAttribute('font-weight', 600);
+    rlbl.textContent = 'router';
+    svg.appendChild(rlbl);
+  }
+  
+  // Token column
+  for (let i = 0; i < state.tokens.length; i++) {
+    const t = state.tokens[i];
+    const y = tokenY(i);
+    const g = document.createElementNS(SVG_NS, 'g');
+    g.setAttribute('id', `tok-${i}`);
+    g.setAttribute('transform', `translate(${d.tokColX}, ${y})`);
+    
+    const r = document.createElementNS(SVG_NS, 'rect');
+    r.setAttribute('x', -62); r.setAttribute('y', -13);
+    r.setAttribute('width', 124); r.setAttribute('height', 26);
+    r.setAttribute('rx', 4);
+    r.setAttribute('fill', '#fff');
+    r.setAttribute('stroke', '#d9cfba');
+    r.setAttribute('class', 'tok-bg');
+    g.appendChild(r);
+    
+    const txt = document.createElementNS(SVG_NS, 'text');
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('y', 4);
+    txt.setAttribute('font-family', 'JetBrains Mono, monospace');
+    txt.setAttribute('font-size', 12);
+    txt.setAttribute('fill', '#1a1814');
+    const display = t.text.length > 14 ? t.text.slice(0,13)+'…' : t.text;
+    txt.textContent = display;
+    g.appendChild(txt);
+    
+    svg.appendChild(g);
+  }
+  
+  const tcLabel = document.createElementNS(SVG_NS, 'text');
+  tcLabel.setAttribute('x', d.tokColX);
+  tcLabel.setAttribute('y', 24);
+  tcLabel.setAttribute('text-anchor', 'middle');
+  tcLabel.setAttribute('font-family', 'JetBrains Mono, monospace');
+  tcLabel.setAttribute('font-size', 10);
+  tcLabel.setAttribute('fill', '#7a7165');
+  tcLabel.setAttribute('letter-spacing', '0.15em');
+  tcLabel.textContent = `TOKENS (${state.tokens.length})`;
+  svg.appendChild(tcLabel);
+  
+  // Output column label
+  const oLabel = document.createElementNS(SVG_NS, 'text');
+  oLabel.setAttribute('x', d.layerEndX + 30);
+  oLabel.setAttribute('y', 24);
+  oLabel.setAttribute('text-anchor', 'middle');
+  oLabel.setAttribute('font-family', 'JetBrains Mono, monospace');
+  oLabel.setAttribute('font-size', 10);
+  oLabel.setAttribute('fill', '#7a7165');
+  oLabel.setAttribute('letter-spacing', '0.15em');
+  oLabel.textContent = 'OUTPUT';
+  svg.appendChild(oLabel);
+  
+  // Experts in each layer
+  for (let l = 0; l < d.L; l++) {
+    const cx = layerCenterX(l);
+    for (let e = 0; e < d.N; e++) {
+      const ey = expertY(e);
+      const g = document.createElementNS(SVG_NS, 'g');
+      g.setAttribute('id', `exp-${l}-${e}`);
+      g.setAttribute('transform', `translate(${cx}, ${ey})`);
+      
+      const c = document.createElementNS(SVG_NS, 'circle');
+      c.setAttribute('r', Math.max(16, Math.min(22, d.expertSpacing/2 - 4)));
+      c.setAttribute('fill', '#fff');
+      c.setAttribute('stroke', COLORS[e % 8]);
+      c.setAttribute('stroke-width', 1.5);
+      c.setAttribute('class', 'exp-circle');
+      g.appendChild(c);
+      
+      const lab = document.createElementNS(SVG_NS, 'text');
+      lab.setAttribute('text-anchor', 'middle');
+      lab.setAttribute('y', 4);
+      lab.setAttribute('font-family', 'JetBrains Mono, monospace');
+      lab.setAttribute('font-size', 11);
+      lab.setAttribute('font-weight', 600);
+      lab.setAttribute('fill', COLORS[e % 8]);
+      lab.textContent = `E${e}`;
+      g.appendChild(lab);
+      
+      svg.appendChild(g);
+    }
+  }
+  
+  // Particle layer
+  const particles = document.createElementNS(SVG_NS, 'g');
+  particles.setAttribute('id', 'particles');
+  svg.appendChild(particles);
+  
+  // Logits indicator overlay
+  const logits = document.createElementNS(SVG_NS, 'g');
+  logits.setAttribute('id', 'logits');
+  svg.appendChild(logits);
+  
+  state.built = true;
+}
+
+// === Animation primitives ===
+function emitParticle(fromX, fromY, toX, toY, color, duration, onDone) {
+  const g = document.getElementById('particles');
+  if (!g) { if (onDone) onDone(); return; }
+  const id = ++state.particleId;
+  const c = document.createElementNS(SVG_NS, 'circle');
+  c.setAttribute('cx', fromX);
+  c.setAttribute('cy', fromY);
+  c.setAttribute('r', 5);
+  c.setAttribute('fill', color);
+  c.setAttribute('opacity', 0.95);
+  c.setAttribute('filter', 'drop-shadow(0 0 4px '+color+')');
+  c.setAttribute('data-pid', id);
+  g.appendChild(c);
+  
+  const start = performance.now();
+  function step(now) {
+    if (!state.running && state.microStep !== -1) { 
+      // allow finish even when paused
+    }
+    const p = Math.min(1, (now - start) / duration);
+    const ease = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p+2, 2)/2;
+    const x = fromX + (toX - fromX) * ease;
+    const y = fromY + (toY - fromY) * ease;
+    c.setAttribute('cx', x);
+    c.setAttribute('cy', y);
+    if (p < 1) {
+      requestAnimationFrame(step);
+    } else {
+      // fade out
+      c.setAttribute('opacity', 0);
+      setTimeout(() => { if (c.parentNode) c.parentNode.removeChild(c); }, 200);
+      if (onDone) onDone();
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+function highlightToken(idx, on=true) {
+  const tok = document.getElementById(`tok-${idx}`);
+  if (!tok) return;
+  const bg = tok.querySelector('.tok-bg');
+  if (on) {
+    bg.setAttribute('fill', '#fde8b4');
+    bg.setAttribute('stroke', '#b03d1a');
+    bg.setAttribute('stroke-width', 1.5);
+  } else {
+    bg.setAttribute('fill', '#eef0e8');
+    bg.setAttribute('stroke', '#a4b196');
+    bg.setAttribute('stroke-width', 1);
+  }
+}
+
+function pulseExpert(layer, expert) {
+  const g = document.getElementById(`exp-${layer}-${expert}`);
+  if (!g) return;
+  const c = g.querySelector('.exp-circle');
+  c.setAttribute('fill', COLORS[expert % 8]);
+  c.setAttribute('stroke-width', 2.5);
+  // text changes color to white
+  const t = g.querySelector('text');
+  if (t) t.setAttribute('fill', '#fff');
+  setTimeout(() => {
+    c.setAttribute('fill', '#fff');
+    c.setAttribute('stroke-width', 1.5);
+    if (t) t.setAttribute('fill', COLORS[expert % 8]);
+  }, Math.max(200, state.cfg.speed));
+}
+
+function pulseRouter(layer) {
+  const r = document.getElementById(`router-${layer}`);
+  if (!r) return;
+  r.setAttribute('fill', '#fde8b4');
+  setTimeout(() => r.setAttribute('fill', '#fff'), Math.max(200, state.cfg.speed));
+}
+
+function showLogits(layer, logits, selected) {
+  const g = document.getElementById('logits');
+  if (!g) return;
+  g.innerHTML = '';
+  const cx = layerCenterX(layer);
+  const N = logits.length;
+  const min = Math.min(...logits), max = Math.max(...logits);
+  const range = max - min || 1;
+  const barW = 9, gap = 3;
+  const totalW = N * (barW + gap) - gap;
+  const startX = cx - totalW/2;
+  const baseY = 102;
+  
+  const card = document.createElementNS(SVG_NS, 'rect');
+  card.setAttribute('x', startX - 8);
+  card.setAttribute('y', baseY - 38);
+  card.setAttribute('width', totalW + 16);
+  card.setAttribute('height', 50);
+  card.setAttribute('rx', 4);
+  card.setAttribute('fill', 'rgba(255,255,255,0.95)');
+  card.setAttribute('stroke', '#d9cfba');
+  card.setAttribute('stroke-width', 1);
+  g.appendChild(card);
+  
+  for (let i = 0; i < N; i++) {
+    const norm = (logits[i] - min) / range;
+    const h = 4 + norm * 28;
+    const r = document.createElementNS(SVG_NS, 'rect');
+    r.setAttribute('x', startX + i * (barW + gap));
+    r.setAttribute('y', baseY - h);
+    r.setAttribute('width', barW);
+    r.setAttribute('height', h);
+    r.setAttribute('fill', selected.includes(i) ? COLORS[i % 8] : '#d9cfba');
+    r.setAttribute('opacity', selected.includes(i) ? 1 : 0.5);
+    r.setAttribute('rx', 1);
+    g.appendChild(r);
+  }
+  
+  const lab = document.createElementNS(SVG_NS, 'text');
+  lab.setAttribute('x', cx);
+  lab.setAttribute('y', baseY - 42);
+  lab.setAttribute('text-anchor', 'middle');
+  lab.setAttribute('font-family', 'JetBrains Mono, monospace');
+  lab.setAttribute('font-size', 8);
+  lab.setAttribute('fill', '#7a7165');
+  lab.textContent = 'router scores · top-' + state.cfg.k + ' selected';
+  g.appendChild(lab);
+}
+
+function clearLogits() {
+  const g = document.getElementById('logits');
+  if (g) g.innerHTML = '';
+}
+
+// === Tick driver ===
+function tick() {
+  if (!state.running) return;
+  if (state.curToken >= state.tokens.length) { finish(); return; }
+  
+  const t = state.curToken, l = state.curLayer;
+  const token = state.tokens[t];
+  const N = state.cfg.N;
+  
+  if (state.microStep === 0) {
+    // === Token arrives at this layer ===
+    if (l === 0) highlightToken(t, true);
+    const selected = state.routing[t][l] || [];
+    
+    if (l === 0) {
+      addNarration(`Token "${token.text}"  →  Layer 1`, 'token');
+    } else {
+      addNarration(`  layer ${l+1}: → experts ${selected.map(e=>'E'+e).join('+') || '(dropped)'}`, 'indent');
+    }
+    
+    // particle from previous position to router
+    const fromX = (l === 0 ? dims().tokColX + 62 : layerCenterX(l-1));
+    const fromY = (l === 0 ? tokenY(t) : routerY()+11);
+    const cx = layerCenterX(l);
+    
+    pulseRouter(l);
+    
+    emitParticle(fromX, fromY, cx, routerY()+11, '#1a1814', state.cfg.speed, () => {
+      // show logits + selected
+      const logits = computeLogits(token, l, N);
+      showLogits(l, logits, selected);
+      if (l === 0) {
+        addNarration(`  layer 1: → experts ${selected.map(e=>'E'+e).join('+') || '(dropped)'}`, 'indent');
+      }
+      state.microStep = 1;
+      schedule(state.cfg.speed);
+    });
+    return;
+  }
+  
+  if (state.microStep === 1) {
+    // === Particles travel from router to selected experts ===
+    const selected = state.routing[t][l] || [];
+    const cx = layerCenterX(l);
+    const cy = routerY() + 11;
+    
+    if (selected.length === 0) {
+      addNarration(`  ⚠ token dropped — preferred experts at capacity`, 'warn');
+      state.microStep = 2;
+      schedule(state.cfg.speed);
+      return;
+    }
+    
+    let pending = selected.length;
+    for (const e of selected) {
+      emitParticle(cx, cy, layerCenterX(l), expertY(e), COLORS[e % 8], state.cfg.speed, () => {
+        pulseExpert(l, e);
+        pending--;
+        if (pending === 0) {
+          state.microStep = 2;
+          schedule(state.cfg.speed * 0.8);
+        }
+      });
+    }
+    return;
+  }
+  
+  if (state.microStep === 2) {
+    // === Move to next layer or output ===
+    clearLogits();
+    state.microStep = 0;
+    state.curLayer++;
+    
+    if (state.curLayer >= state.cfg.L) {
+      // Final particle to output
+      const lastSelected = state.routing[t][state.cfg.L-1] || [];
+      const lastY = lastSelected.length > 0 ? expertY(lastSelected[0]) : 250;
+      const finalColor = lastSelected.length > 0 ? COLORS[lastSelected[0] % 8] : '#7a7165';
+      emitParticle(layerCenterX(state.cfg.L-1), lastY, dims().layerEndX + 30, tokenY(t), finalColor, state.cfg.speed, () => {
+        highlightToken(t, false);
+        state.curToken++;
+        state.curLayer = 0;
+        updateStats();
+        schedule(state.cfg.speed * 0.4);
+      });
+      return;
+    }
+    schedule(state.cfg.speed * 0.3);
+    return;
+  }
+}
+
+function schedule(delay) {
+  if (!state.running) return;
+  if (state.timer) clearTimeout(state.timer);
+  state.timer = setTimeout(tick, delay || state.cfg.speed);
+}
+
+// === Run / Pause / Reset ===
+function ensureBuilt() {
+  state.tokens = tokenize(document.getElementById('prompt').value);
+  if (state.tokens.length === 0) state.tokens = tokenize('hello');
+  precomputeRouting();
+  buildSVG();
+  initStats();
+}
+
+function startSim() {
+  if (state.finished) reset();
+  if (!state.built || state.tokens.length === 0) ensureBuilt();
+  state.running = true;
+  document.getElementById('btn-run').textContent = '⏸ Pause';
+  schedule(50);
+}
+
+function pauseSim() {
+  state.running = false;
+  if (state.timer) { clearTimeout(state.timer); state.timer = null; }
+  document.getElementById('btn-run').textContent = '▶ Resume';
+}
+
+function reset() {
+  state.running = false;
+  if (state.timer) { clearTimeout(state.timer); state.timer = null; }
+  state.tokens = [];
+  state.routing = [];
+  state.utilization = [];
+  state.dropped = 0;
+  state.curToken = 0;
+  state.curLayer = 0;
+  state.microStep = 0;
+  state.finished = false;
+  state.built = false;
+  document.getElementById('btn-run').textContent = '▶ Run';
+  document.getElementById('viz').innerHTML = '';
+  document.getElementById('narration').innerHTML = '';
+  document.getElementById('insights').classList.remove('visible');
+  initStats();
+  // build empty preview
+  ensureBuilt();
+  state.running = false;
+}
+
+function finish() {
+  state.running = false;
+  if (state.timer) clearTimeout(state.timer);
+  state.finished = true;
+  document.getElementById('btn-run').textContent = '↻ Run again';
+  showInsights();
+}
+
+// === Stats UI ===
+function initStats() {
+  const list = document.getElementById('util-list');
+  list.innerHTML = '';
+  const N = state.cfg.N;
+  for (let i = 0; i < N; i++) {
+    const row = document.createElement('div');
+    row.className = 'util-row';
+    row.innerHTML = `
+      <div class="label" style="color:${COLORS[i%8]}">E${i}</div>
+      <div class="util-bar">
+        <div class="fill" id="fill-${i}" style="width:0%;background:${COLORS[i%8]}"></div>
+        <div class="ideal" id="ideal-${i}"></div>
+      </div>
+      <div class="count" id="count-${i}">0</div>
+    `;
+    list.appendChild(row);
+  }
+  
+  // Compute illustrative param numbers
+  const totalParamsM = state.cfg.L * (state.cfg.N * PARAMS_PER_EXPERT_M + PARAMS_ROUTER_M + PARAMS_ATTN_M);
+  const activeParamsM = state.cfg.L * (state.cfg.k * PARAMS_PER_EXPERT_M + PARAMS_ROUTER_M + PARAMS_ATTN_M);
+  
+  document.getElementById('m-tokens').textContent = '0';
+  document.getElementById('m-tokens-sub').textContent = `of ${state.tokens.length || 0}`;
+  document.getElementById('m-active').textContent = `${activeParamsM.toFixed(0)}M`;
+  document.getElementById('m-flops').textContent = `${Math.round((1 - state.cfg.k/state.cfg.N) * 100)}%`;
+  document.getElementById('m-dropped').textContent = '0';
+  // active sub
+  const sub = document.querySelectorAll('.metric-sub')[0];
+  if (sub) sub.textContent = `of ${totalParamsM.toFixed(0)}M total`;
+}
+
+function updateStats() {
+  const {N, L, k} = state.cfg;
+  const T = state.curToken;
+  // Last layer utilization
+  const counts = state.utilization[L-1] || [];
+  const ideal = (T * k) / N;
+  const max = Math.max(1, ...counts);
+  
+  for (let i = 0; i < N; i++) {
+    const c = counts[i] || 0;
+    const fill = document.getElementById(`fill-${i}`);
+    const cnt = document.getElementById(`count-${i}`);
+    const idl = document.getElementById(`ideal-${i}`);
+    if (fill) fill.style.width = (c / max * 100) + '%';
+    if (cnt) cnt.textContent = c;
+    if (idl) idl.style.left = (ideal / max * 100) + '%';
+  }
+  
+  document.getElementById('m-tokens').textContent = T;
+  document.getElementById('m-tokens-sub').textContent = `of ${state.tokens.length}`;
+  document.getElementById('m-dropped').textContent = state.dropped;
+}
+
+function showInsights() {
+  const {N, L, k} = state.cfg;
+  const T = state.tokens.length;
+  const ideal = (T * k) / N;
+  const counts = state.utilization[L-1];
+  const max = Math.max(...counts);
+  const min = Math.min(...counts);
+  const zeros = counts.filter(c => c === 0).length;
+  const top = counts.indexOf(max);
+  const ratio = max / Math.max(ideal, 1);
+  
+  let msg = '';
+  if (!state.cfg.balance && ratio > 2.0) {
+    msg = `Without load balancing, expert E${top} captured ${max} of ${T*k} routings (${Math.round(max/(T*k)*100)}%) — ${ratio.toFixed(1)}× the ideal of ${ideal.toFixed(1)}. ${zeros} experts received nothing. This is exactly the "rich-get-richer" collapse the auxiliary loss is designed to prevent during real training.`;
+  } else if (state.dropped > 0) {
+    msg = `${state.dropped} expert slots couldn't be filled — the preferred expert was already at capacity. In production, raise the capacity factor or the auxiliary loss weight. But note: more capacity costs more memory and inter-device communication.`;
+  } else if (ratio > 1.7) {
+    msg = `On this prompt, expert E${top} took ${max} routings (${ratio.toFixed(1)}× ideal). On a real workload with millions of tokens, the auxiliary load-balancing loss would flatten this. On a four-prompt probe like the live-moe-demo notebook, this much skew is normal.`;
+  } else if (zeros > 0) {
+    msg = `${zeros} of ${N} experts saw no traffic. With more diverse inputs and the load-balancing loss enabled during training, the distribution flattens — every expert gets used.`;
+  } else {
+    msg = `Routing stayed balanced: most-used expert E${top} got ${max} routings vs the ideal of ${ideal.toFixed(1)}. With ${k} of ${N} experts active per token, you saved ${Math.round((1-k/N)*100)}% of the FFN FLOPs vs running every expert dense.`;
+  }
+  
+  document.getElementById('insight-text').textContent = msg;
+  document.getElementById('insights').classList.add('visible');
+}
+
+function addNarration(text, cls='') {
+  const log = document.getElementById('narration');
+  const div = document.createElement('div');
+  div.className = 'step ' + cls;
+  div.textContent = text;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+// === Wire up controls ===
+function wireControls() {
+  const sliderKeys = ['n','k','l','c','s'];
+  sliderKeys.forEach(key => {
+    const slider = document.getElementById('cfg-'+key);
+    const display = document.getElementById('val-'+key);
+    slider.addEventListener('input', () => {
+      const raw = +slider.value;
+      let display_v = raw;
+      if (key === 'c') display_v = (raw/100).toFixed(2);
+      display.textContent = display_v;
+      if (key === 'n') state.cfg.N = raw;
+      if (key === 'k') state.cfg.k = raw;
+      if (key === 'l') state.cfg.L = raw;
+      if (key === 'c') state.cfg.capacity = raw/100;
+      if (key === 's') state.cfg.speed = raw;
+      // Cap k at N
+      const kSlider = document.getElementById('cfg-k');
+      kSlider.max = Math.min(4, state.cfg.N);
+      if (state.cfg.k > state.cfg.N) {
+        state.cfg.k = state.cfg.N;
+        kSlider.value = state.cfg.N;
+        document.getElementById('val-k').textContent = state.cfg.N;
+      }
+      // Soft reset (re-build, don't auto-run)
+      if (key === 's') return; // speed change doesn't need rebuild
+      softRebuild();
+    });
+  });
+  document.getElementById('cfg-bal').addEventListener('change', () => {
+    state.cfg.balance = document.getElementById('cfg-bal').checked;
+    softRebuild();
+  });
+  
+  document.getElementById('btn-run').addEventListener('click', () => {
+    if (state.running) pauseSim();
+    else startSim();
+  });
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    reset();
+  });
+  
+  document.querySelectorAll('.presets button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.getElementById('prompt').value = PRESETS[b.dataset.preset];
+      softRebuild();
+    });
+  });
+  
+  document.getElementById('prompt').addEventListener('input', () => {
+    softRebuild();
+  });
+}
+
+function softRebuild() {
+  state.running = false;
+  if (state.timer) { clearTimeout(state.timer); state.timer = null; }
+  state.curToken = 0;
+  state.curLayer = 0;
+  state.microStep = 0;
+  state.finished = false;
+  document.getElementById('btn-run').textContent = '▶ Run';
+  document.getElementById('narration').innerHTML = '';
+  document.getElementById('insights').classList.remove('visible');
+  ensureBuilt();
+}
+
+// Init
+wireControls();
+ensureBuilt(); // build initial preview with default prompt
+</script>
+</body>
+</html>

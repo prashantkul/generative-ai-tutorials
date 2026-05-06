@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diffusion Models — A Tutorial from First Principles</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+
+<style>
+:root{
+  --paper:#f4ede0;--paper-2:#ebe3d4;--card:#fbf7ef;
+  --ink:#1a1814;--ink-2:#3d3830;--ink-3:#7a7165;--rule:#d9cfba;
+  --rust:#b03d1a;--rust-soft:#dba287;
+  --sage:#506348;--sage-soft:#a4b196;
+  --gold:#b88528;--gold-soft:#e8c879;
+  --indigo:#3a5a72;--plum:#8a3a5e;
+  --highlight:#fde8b4;
+  --shadow: 0 1px 0 rgba(26,24,20,.04), 0 8px 30px -10px rgba(26,24,20,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:'Newsreader',Georgia,serif;font-size:19px;line-height:1.65;font-weight:380;
+  text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(circle at 80% 10%, rgba(176,61,26,.04), transparent 40%),
+    radial-gradient(circle at 20% 70%, rgba(58,90,114,.04), transparent 50%);
+  background-attachment:fixed;
+}
+.shell{max-width:1240px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:240px minmax(0,1fr);gap:64px}
+@media (max-width:980px){.shell{grid-template-columns:1fr;gap:0;padding:0 22px}.toc{display:none}}
+.toc{position:sticky;top:32px;align-self:start;padding:80px 0 0;font-family:'Fraunces',serif;font-size:13px;letter-spacing:.02em;height:calc(100vh - 32px);overflow-y:auto}
+.toc h4{font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:13px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.18em;margin-bottom:14px}
+.toc ol{list-style:none;counter-reset:toc}
+.toc li{counter-increment:toc;margin:6px 0;padding-left:28px;position:relative}
+.toc li::before{content:counter(toc, decimal-leading-zero);position:absolute;left:0;top:1px;font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace}
+.toc a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid transparent;transition:border .2s,color .2s}
+.toc a:hover{color:var(--rust);border-bottom-color:var(--rust)}
+main{max-width:740px;padding:60px 0 120px}
+
+/* Typography */
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--rust);margin-bottom:24px;display:flex;align-items:center;gap:14px}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--rule)}
+h1.title{font-family:'Fraunces',serif;font-weight:300;font-size:clamp(48px,7vw,84px);line-height:.95;letter-spacing:-.02em;margin-bottom:18px;font-variation-settings:"opsz" 144,"SOFT" 50}
+h1.title em{font-style:italic;font-weight:400;color:var(--indigo);font-variation-settings:"opsz" 144,"SOFT" 100}
+.subtitle{font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:24px;color:var(--ink-2);line-height:1.4;max-width:560px;margin-bottom:36px}
+.byline{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);padding-top:24px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:80px}
+.byline a{color:var(--rust);text-decoration:none;border-bottom:1px dotted var(--rust)}
+
+section{margin:80px 0;scroll-margin-top:24px}
+.chapter-mark{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px;display:flex;align-items:center;gap:14px}
+.chapter-mark .num{display:inline-flex;width:32px;height:32px;background:var(--ink);color:var(--paper);border-radius:50%;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+h2{font-family:'Fraunces',serif;font-weight:400;font-size:42px;line-height:1.1;letter-spacing:-.015em;margin:14px 0 28px;font-variation-settings:"opsz" 72,"SOFT" 30}
+h2 em{font-style:italic;color:var(--indigo);font-weight:300}
+h3{font-family:'Fraunces',serif;font-weight:500;font-style:italic;font-size:24px;margin:40px 0 14px;color:var(--ink)}
+p{margin:0 0 18px;hyphens:auto}
+.lede{font-size:22px;line-height:1.55;color:var(--ink-2);font-family:'Fraunces',serif;font-weight:300}
+.lede:first-letter{font-family:'Fraunces',serif;font-weight:600;font-size:78px;float:left;line-height:.85;margin:6px 10px 0 -2px;color:var(--indigo)}
+strong{font-weight:600;color:var(--ink)}
+.term{font-family:'Fraunces',serif;font-style:italic;font-weight:500;color:var(--indigo);border-bottom:1px dotted var(--indigo);padding-bottom:1px}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--paper-2);padding:1px 6px;border-radius:3px;color:var(--ink)}
+
+.pullquote{border-left:3px solid var(--indigo);padding:8px 0 8px 24px;margin:32px 0;font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:24px;line-height:1.4;color:var(--ink-2)}
+
+/* Aside boxes */
+.aside{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:24px 28px;margin:32px 0;box-shadow:var(--shadow);position:relative}
+.aside .label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.2em;color:var(--rust);margin-bottom:8px}
+.aside.insight{background:linear-gradient(180deg,#fdf3da 0%,#fbf6ec 100%);border-color:var(--gold)}
+.aside.insight .label{color:var(--gold)}
+.aside.warn{background:#fdebe2;border-color:var(--rust-soft)}
+.aside.check{background:#eef0e8;border-color:#bcc4ad}
+.aside.check .label{color:var(--sage)}
+.aside p:last-child{margin-bottom:0}
+
+/* Figures */
+figure{margin:40px -40px;background:var(--card);border:1px solid var(--rule);border-radius:8px;overflow:hidden;box-shadow:var(--shadow)}
+@media (max-width:980px){figure{margin:32px 0}}
+figure img{width:100%;height:auto;display:block;background:#fff;padding:20px}
+figure svg{display:block;width:100%}
+figcaption{padding:14px 24px 18px;font-family:'Fraunces',serif;font-style:italic;font-size:15px;line-height:1.45;color:var(--ink-2);border-top:1px solid var(--rule)}
+figcaption .src{display:block;font-family:'JetBrains Mono',monospace;font-style:normal;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+
+/* Math display */
+.math-display{margin:24px 0;padding:18px 24px;background:var(--card);border-left:3px solid var(--gold);border-radius:0 4px 4px 0;font-size:.95em;overflow-x:auto}
+
+/* Lists */
+ul.fancy,ol.fancy{margin:18px 0 24px 0;padding-left:0;list-style:none}
+ul.fancy li,ol.fancy li{position:relative;padding-left:32px;margin-bottom:12px}
+ul.fancy li::before{content:"§";position:absolute;left:0;top:0;color:var(--indigo);font-family:'Fraunces',serif;font-style:italic;font-size:1.1em}
+ol.fancy{counter-reset:fancy}
+ol.fancy li{counter-increment:fancy}
+ol.fancy li::before{content:counter(fancy, decimal-leading-zero);position:absolute;left:0;top:3px;color:var(--indigo);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600}
+
+/* Glossary */
+.glossary dt{font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:20px;color:var(--indigo);margin:18px 0 4px}
+.glossary dd{margin:0 0 8px;font-size:17px;line-height:1.55}
+
+/* Compare columns */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:32px 0}
+@media (max-width:680px){.compare{grid-template-columns:1fr}}
+.compare > div{background:var(--card);padding:22px;border-radius:6px;border-top:3px solid var(--rule)}
+
+/* ASCII diagram */
+pre.diagram{font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.5;background:var(--card);padding:18px 22px;border:1px solid var(--rule);border-radius:6px;overflow-x:auto;margin:24px 0;color:var(--ink-2)}
+
+/* Demo */
+.demo{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:24px;margin:32px 0;box-shadow:var(--shadow)}
+.demo button{background:var(--ink);color:var(--paper);border:none;padding:8px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;border-radius:3px;cursor:pointer;transition:background .2s}
+.demo button:hover{background:var(--indigo)}
+
+/* Note */
+.note{font-size:15px;color:var(--ink-3);font-style:italic;font-family:'Fraunces',serif;font-weight:300;border-top:1px solid var(--rule);padding-top:12px;margin-top:18px}
+
+/* Footer */
+footer{margin-top:120px;padding-top:40px;border-top:1px solid var(--rule);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);line-height:1.7}
+footer a{color:var(--rust);text-decoration:none;border-bottom:1px dotted var(--rust)}
+.ornament{text-align:center;font-family:'Fraunces',serif;font-style:italic;font-size:32px;color:var(--indigo);margin:60px 0 40px;opacity:.5;letter-spacing:.5em}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<!-- ===== TOC ===== -->
+<nav class="toc" aria-label="Table of Contents">
+  <h4>Tutorial</h4>
+  <ol>
+    <li><a href="#intuition">The core intuition</a></li>
+    <li><a href="#forward">The forward process</a></li>
+    <li><a href="#schedule">The noise schedule</a></li>
+    <li><a href="#reverse">The reverse process</a></li>
+    <li><a href="#predict">What the network predicts</a></li>
+    <li><a href="#training">The training objective</a></li>
+    <li><a href="#unet">The U-Net</a></li>
+    <li><a href="#ddpm">DDPM sampling</a></li>
+    <li><a href="#ddim">DDIM &amp; accelerated sampling</a></li>
+    <li><a href="#cfg">Classifier-free guidance</a></li>
+    <li><a href="#fieldnotes">Field notes: training on MNIST</a></li>
+    <li><a href="#latent">Latent diffusion</a></li>
+    <li><a href="#modern">Modern developments</a></li>
+    <li><a href="#playground">Interactive: 2D denoising</a></li>
+    <li><a href="#takeaways">Takeaways &amp; exercises</a></li>
+  </ol>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<main>
+
+<header>
+  <div class="eyebrow">A First-Principles Tutorial · Chapter 04</div>
+  <h1 class="title">Diffusion <em>Models</em></h1>
+  <p class="subtitle">How to generate data by learning to undo noise — one small Gaussian step at a time.</p>
+  <div class="byline">
+    <span>By Prashant Kulkarni · with help from Claude Opus</span>
+    <span><a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a></span>
+  </div>
+</header>
+
+<!-- ============ 1. INTUITION ============ -->
+<section id="intuition">
+  <div class="chapter-mark"><span class="num">1</span> The core intuition</div>
+  <h2>Destroy, then learn <em>to un-destroy</em></h2>
+
+  <p class="lede">Imagine you are handed a photograph — a crisp, clean image of a cat. Now imagine you sprinkle a tiny amount of static over it: the cat is still perfectly recognizable, just slightly grainy. Then you add a bit more. And more. After a thousand rounds of adding a little static, the cat is gone — all you have left is pure television snow, indistinguishable from random noise.</p>
+
+  <p>That process is easy. Any child can pour sand on a painting. The interesting question is: <em>can you learn to run it backward?</em> Can you look at a noisy picture and infer what it looked like one step earlier, when it was a tiny bit less noisy?</p>
+
+  <p>If you can — if you have a neural network that can reliably undo one small step of noise — then you have a generative model. Start with pure random noise, run your denoiser a thousand times, and out comes a photograph of a cat that never existed.</p>
+
+  <div class="pullquote">"If each corruption step is small enough, its reverse is also approximately Gaussian. We only need to learn the parameters of that Gaussian."</div>
+
+  <p>This is the entire idea behind diffusion models. Two processes, running in opposite directions:</p>
+
+  <ul class="fancy">
+    <li><strong>The forward process</strong> (fixed, no learning): a Markov chain that gradually adds Gaussian noise over $T$ steps, turning any data sample $x_0$ into pure noise $x_T \sim \mathcal{N}(0, I)$.</li>
+    <li><strong>The reverse process</strong> (learned): a Markov chain that runs backward in time, iteratively removing noise — step by step, $x_T \to x_{T-1} \to \cdots \to x_0$ — recovering a data sample from nothing but static.</li>
+  </ul>
+
+  <figure>
+    <svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Two processes, opposite directions</text>
+      <!-- x_0 -->
+      <g transform="translate(60,100)">
+        <rect x="-40" y="-40" width="80" height="80" rx="6" fill="#3a5a72"/>
+        <text y="-48" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">x₀</text>
+        <text y="6" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">clean</text>
+        <text y="22" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">data</text>
+      </g>
+      <!-- x_1 -->
+      <g transform="translate(190,100)">
+        <rect x="-40" y="-40" width="80" height="80" rx="6" fill="#506348"/>
+        <text y="-48" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">x₁</text>
+        <text y="6" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">slightly</text>
+        <text y="22" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">noisy</text>
+        <!-- noise dots -->
+        <circle cx="-18" cy="-24" r="2" fill="#fff" opacity="0.4"/>
+        <circle cx="22" cy="12" r="2" fill="#fff" opacity="0.4"/>
+        <circle cx="-8" cy="28" r="2" fill="#fff" opacity="0.4"/>
+        <circle cx="14" cy="-16" r="2" fill="#fff" opacity="0.4"/>
+      </g>
+      <!-- ... -->
+      <text x="300" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="20" fill="#7a7165">···</text>
+      <!-- x_{T-1} -->
+      <g transform="translate(400,100)">
+        <rect x="-40" y="-40" width="80" height="80" rx="6" fill="#b88528"/>
+        <text y="-48" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">x_{T-1}</text>
+        <text y="6" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">very</text>
+        <text y="22" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">noisy</text>
+        <circle cx="-20" cy="-20" r="2.5" fill="#fff" opacity="0.5"/>
+        <circle cx="20" cy="20" r="2.5" fill="#fff" opacity="0.5"/>
+        <circle cx="-15" cy="15" r="2.5" fill="#fff" opacity="0.5"/>
+        <circle cx="15" cy="-15" r="2.5" fill="#fff" opacity="0.5"/>
+        <circle cx="0" cy="0" r="2.5" fill="#fff" opacity="0.5"/>
+        <circle cx="-25" cy="5" r="2.5" fill="#fff" opacity="0.5"/>
+        <circle cx="10" cy="-28" r="2.5" fill="#fff" opacity="0.5"/>
+        <circle cx="25" cy="10" r="2.5" fill="#fff" opacity="0.5"/>
+      </g>
+      <!-- x_T -->
+      <g transform="translate(540,100)">
+        <rect x="-40" y="-40" width="80" height="80" rx="6" fill="#b03d1a"/>
+        <text y="-48" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">x_T</text>
+        <text y="6" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">pure</text>
+        <text y="22" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">noise</text>
+        <!-- lots of noise dots -->
+        <circle cx="-22" cy="-22" r="2" fill="#fff" opacity="0.6"/>
+        <circle cx="22" cy="22" r="2" fill="#fff" opacity="0.6"/>
+        <circle cx="-15" cy="15" r="2" fill="#fff" opacity="0.6"/>
+        <circle cx="15" cy="-15" r="2" fill="#fff" opacity="0.6"/>
+        <circle cx="0" cy="0" r="2" fill="#fff" opacity="0.6"/>
+        <circle cx="-25" cy="5" r="2" fill="#fff" opacity="0.6"/>
+        <circle cx="10" cy="-28" r="2" fill="#fff" opacity="0.6"/>
+        <circle cx="25" cy="10" r="2" fill="#fff" opacity="0.6"/>
+        <circle cx="-8" cy="-30" r="2" fill="#fff" opacity="0.6"/>
+        <circle cx="28" cy="-5" r="2" fill="#fff" opacity="0.6"/>
+        <circle cx="-30" cy="-10" r="2" fill="#fff" opacity="0.6"/>
+        <circle cx="5" cy="30" r="2" fill="#fff" opacity="0.6"/>
+      </g>
+      <!-- Forward arrows (top, solid) -->
+      <g stroke="#7a7165" stroke-width="1.2" fill="none" marker-end="url(#ar-fwd)">
+        <line x1="104" y1="72" x2="146" y2="72"/>
+        <line x1="234" y1="72" x2="276" y2="72"/>
+        <line x1="324" y1="72" x2="356" y2="72"/>
+        <line x1="444" y1="72" x2="496" y2="72"/>
+      </g>
+      <text x="360" y="58" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.15em">FORWARD q(x_t | x_{t-1}) — fixed, adds noise</text>
+      <!-- Reverse arrows (bottom, dashed) -->
+      <g stroke="#3a5a72" stroke-width="1.8" fill="none" stroke-dasharray="5,3" marker-end="url(#ar-rev)">
+        <line x1="496" y1="132" x2="444" y2="132"/>
+        <line x1="356" y1="132" x2="324" y2="132"/>
+        <line x1="276" y1="132" x2="234" y2="132"/>
+        <line x1="146" y1="132" x2="104" y2="132"/>
+      </g>
+      <text x="360" y="158" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#3a5a72" letter-spacing="0.15em">REVERSE p_θ(x_{t-1} | x_t) — learned, removes noise</text>
+      <!-- SNR indicator -->
+      <g transform="translate(60,200)">
+        <rect x="0" y="0" width="520" height="14" rx="7" fill="#ebe2d0"/>
+        <rect x="0" y="0" width="520" height="14" rx="7" fill="url(#snr-grad)"/>
+        <text x="-6" y="11" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="8" fill="#3a5a72">SNR</text>
+        <text x="10" y="28" font-family="JetBrains Mono,monospace" font-size="8" fill="#3a5a72">high (clean)</text>
+        <text x="510" y="28" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="8" fill="#b03d1a">low (noise)</text>
+      </g>
+      <defs>
+        <marker id="ar-fwd" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7a7165"/></marker>
+        <marker id="ar-rev" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3a5a72"/></marker>
+        <linearGradient id="snr-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#3a5a72"/>
+          <stop offset="100%" stop-color="#b03d1a"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <figcaption>
+      The two processes of a diffusion model. Forward (top arrows): gradually corrupt data into noise over $T$ steps — this is fixed and requires no learning. Reverse (bottom arrows): learn a neural network to undo each small step, walking back from pure noise to a clean sample. The gradient bar shows how the signal-to-noise ratio decreases as $t$ increases.
+      <span class="src">Original SVG · Concept after Ho et al. (2020), <em>DDPM</em></span>
+    </figcaption>
+  </figure>
+
+  <p>The name "diffusion" comes from the analogy to physical diffusion: ink dropped into water spreads until it's uniformly dissolved. The forward process is the ink spreading; the reverse process is learning to un-dissolve it, concentrating dilute molecules back into a coherent droplet. Thermodynamically, the forward process increases entropy (disorder); the reverse process decreases it (restores structure).</p>
+
+  <div class="aside insight">
+    <div class="label">Key insight</div>
+    <p>The magic of diffusion models is that <strong>each individual step only adds a tiny amount of noise</strong>. When the step size is small enough, the reverse of each step is also approximately Gaussian. The neural network only needs to learn the parameters (mean and variance) of a Gaussian at each step — which is a tractable learning problem.</p>
+  </div>
+</section>
+
+<!-- ============ 2. FORWARD PROCESS ============ -->
+<section id="forward">
+  <div class="chapter-mark"><span class="num">2</span> The forward process</div>
+  <h2>Adding noise, <em>one step at a time</em></h2>
+
+  <p>The forward process is a Markov chain. At each step $t$, we take the current state $x_{t-1}$, scale it down slightly, and add a small amount of Gaussian noise:</p>
+
+  <div class="math-display">$$q(x_t \mid x_{t-1}) \;=\; \mathcal{N}\!\left(x_t;\; \sqrt{1-\beta_t}\, x_{t-1},\; \beta_t\, \mathbf{I}\right)$$</div>
+
+  <p>Here $\beta_t \in (0,1)$ is the <span class="term">variance schedule</span> at timestep $t$, controlling how much noise is added. In code, the step looks like this:</p>
+
+  <div class="math-display">$$x_t \;=\; \sqrt{1-\beta_t}\, x_{t-1} \;+\; \sqrt{\beta_t}\, \epsilon_t, \qquad \epsilon_t \sim \mathcal{N}(0, \mathbf{I})$$</div>
+
+  <p>The scale factor $\sqrt{1-\beta_t}$ is not arbitrary — it is chosen so that if $x_{t-1}$ has unit variance, then $x_t$ also has approximately unit variance. This is called the <span class="term">variance-preserving</span> property, and it keeps the signal from blowing up or collapsing as we iterate.</p>
+
+  <h3>The closed-form shortcut</h3>
+
+  <p>Here is the most important mathematical fact about the forward process, and the one that makes diffusion models trainable. We can jump directly from $x_0$ to any $x_t$ <em>without iterating through intermediate steps</em>.</p>
+
+  <p>Define:</p>
+
+  <div class="math-display">$$\alpha_t = 1 - \beta_t, \qquad \bar{\alpha}_t = \prod_{s=1}^{t} \alpha_s$$</div>
+
+  <p>Then by recursively substituting the single-step formula and using the fact that sums of independent Gaussians are Gaussian:</p>
+
+  <div class="math-display">$$q(x_t \mid x_0) \;=\; \mathcal{N}\!\left(x_t;\; \sqrt{\bar{\alpha}_t}\, x_0,\; (1-\bar{\alpha}_t)\, \mathbf{I}\right)$$</div>
+
+  <p>Or in sampling form — and this is the formula you'll use in every training loop:</p>
+
+  <div class="math-display">$$x_t \;=\; \sqrt{\bar{\alpha}_t}\, x_0 \;+\; \sqrt{1-\bar{\alpha}_t}\, \epsilon, \qquad \epsilon \sim \mathcal{N}(0, \mathbf{I})$$</div>
+
+  <div class="aside insight">
+    <div class="label">Why this is crucial for training</div>
+    <p>We never need to run the forward chain step by step. To train the model at any timestep $t$, we simply sample $t$ uniformly from $\{1, \ldots, T\}$, compute $x_t$ from $x_0$ in <strong>one operation</strong> using the formula above, and ask the network to denoise. This makes training <strong>embarrassingly parallel across timesteps</strong>.</p>
+  </div>
+
+  <p>The quantity $\bar{\alpha}_t$ has a beautiful interpretation: it is the <em>fraction of the original signal that survives</em> at timestep $t$. At $t=0$, $\bar{\alpha}_0 \approx 1$ — the data is nearly intact. At $t=T$, $\bar{\alpha}_T \approx 0$ — the signal is gone, and $x_T$ is effectively pure noise. The signal-to-noise ratio at each step is $\text{SNR}(t) = \bar{\alpha}_t / (1-\bar{\alpha}_t)$.</p>
+
+  <h3>The forward posterior</h3>
+
+  <p>One more formula worth understanding — it will become the training target in §6. Given <em>both</em> endpoints $x_0$ and $x_t$, the intermediate step $x_{t-1}$ has a tractable Gaussian posterior:</p>
+
+  <div class="math-display">$$q(x_{t-1} \mid x_t, x_0) \;=\; \mathcal{N}\!\left(x_{t-1};\; \tilde{\mu}_t(x_t, x_0),\; \tilde{\beta}_t\, \mathbf{I}\right)$$</div>
+
+  <p>where:</p>
+
+  <div class="math-display">$$\tilde{\mu}_t \;=\; \frac{\sqrt{\bar{\alpha}_{t-1}}\,\beta_t}{1-\bar{\alpha}_t}\,x_0 \;+\; \frac{\sqrt{\alpha_t}\,(1-\bar{\alpha}_{t-1})}{1-\bar{\alpha}_t}\,x_t$$</div>
+
+  <p>This posterior is the <em>ground truth</em> for what the reverse process should do. The entire training objective, as we'll see shortly, is about making the learned reverse step match this posterior.</p>
+</section>
+
+<!-- ============ 3. NOISE SCHEDULE ============ -->
+<section id="schedule">
+  <div class="chapter-mark"><span class="num">3</span> The noise schedule</div>
+  <h2>How fast do we <em>destroy</em>?</h2>
+
+  <p>The noise schedule $\{\beta_1, \beta_2, \ldots, \beta_T\}$ controls how rapidly the data degrades. Two common choices:</p>
+
+  <dl class="glossary">
+    <dt>Linear schedule</dt>
+    <dd>$\beta_t$ increases linearly from $\beta_1 = 10^{-4}$ to $\beta_T = 0.02$ over $T=1000$ steps. This was the original DDPM recipe. Simple but sub-optimal: $\bar{\alpha}_t$ drops too fast in the middle and too slowly at the ends.</dd>
+    <dt>Cosine schedule</dt>
+    <dd>$\bar{\alpha}_t$ is defined directly as a shifted cosine curve, ensuring a smoother, more gradual transition from signal to noise. Proposed by Nichol &amp; Dhariwal (2021), it gives the model more time in the "interesting" middle region where the denoising task is neither trivial nor hopeless.</dd>
+  </dl>
+
+  <figure>
+    <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Noise schedules: how ᾱ_t decays from 1 (clean) to 0 (noise)</text>
+      <!-- axes -->
+      <line x1="80" y1="50" x2="80" y2="240" stroke="#7a7165" stroke-width="1"/>
+      <line x1="80" y1="240" x2="640" y2="240" stroke="#7a7165" stroke-width="1"/>
+      <!-- y labels -->
+      <text x="72" y="56" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">1.0</text>
+      <text x="72" y="148" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">0.5</text>
+      <text x="72" y="243" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">0.0</text>
+      <text x="40" y="148" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830" transform="rotate(-90 40 148)">ᾱ_t (signal remaining)</text>
+      <!-- x labels -->
+      <text x="80" y="258" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">0</text>
+      <text x="360" y="258" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">T/2</text>
+      <text x="640" y="258" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">T</text>
+      <text x="360" y="278" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">timestep t</text>
+      <!-- linear schedule (drops fast, then flat) -->
+      <path d="M 80,54 C 200,58 300,120 400,200 Q 500,235 640,238" stroke="#b03d1a" stroke-width="2.5" fill="none"/>
+      <text x="520" y="222" font-family="JetBrains Mono,monospace" font-size="11" fill="#b03d1a" font-weight="600">linear</text>
+      <!-- cosine schedule (smooth S-curve) -->
+      <path d="M 80,54 C 180,56 260,60 340,120 S 480,228 640,238" stroke="#3a5a72" stroke-width="2.5" fill="none"/>
+      <text x="206" y="100" font-family="JetBrains Mono,monospace" font-size="11" fill="#3a5a72" font-weight="600">cosine</text>
+      <!-- Annotation: "interesting region" -->
+      <rect x="200" y="80" width="240" height="140" rx="4" fill="none" stroke="#b88528" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>
+      <text x="320" y="76" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#b88528">interesting region: neither trivial nor hopeless</text>
+      <!-- grid lines -->
+      <line x1="80" y1="145" x2="640" y2="145" stroke="#e2d8c2" stroke-width="0.5"/>
+    </svg>
+    <figcaption>
+      The cosine schedule spends more of the $T$ steps in the middle range where $\bar{\alpha}_t \approx 0.3\text{–}0.7$ — the "interesting" region where denoising is a meaningful challenge. The linear schedule rushes through this zone and wastes steps at the extremes where the task is either trivial (nearly clean) or hopeless (nearly pure noise).
+      <span class="src">Original SVG · curve shapes schematic, after Nichol &amp; Dhariwal (2021), <em>Improved DDPM</em></span>
+    </figcaption>
+  </figure>
+
+  <p>The choice of schedule matters more than you might expect. The cosine schedule consistently outperforms the linear one, because it allocates model capacity to the timesteps where the denoising task is actually hard — the middle region where roughly half the signal remains.</p>
+</section>
+
+<!-- ============ 4. REVERSE PROCESS ============ -->
+<section id="reverse">
+  <div class="chapter-mark"><span class="num">4</span> The reverse process</div>
+  <h2>Learning to <em>denoise</em></h2>
+
+  <p>The reverse process is what the neural network learns. It is parameterized as another Markov chain, running backward in time:</p>
+
+  <div class="math-display">$$p_\theta(x_{t-1} \mid x_t) \;=\; \mathcal{N}\!\left(x_{t-1};\; \mu_\theta(x_t, t),\; \sigma_t^2\, \mathbf{I}\right)$$</div>
+
+  <p>The network takes the noisy sample $x_t$ and the timestep $t$ as input, and produces the mean $\mu_\theta$ of a Gaussian distribution over the slightly-less-noisy $x_{t-1}$. The variance $\sigma_t^2$ is typically fixed (not learned) — set to either $\beta_t$ or $\tilde{\beta}_t$, both of which are known from the noise schedule.</p>
+
+  <p>In principle, the network needs to learn a different denoising function for every one of the $T$ timesteps. In practice, a <em>single</em> network handles all timesteps by taking $t$ as an input. The timestep is typically encoded as a sinusoidal positional embedding (the same trick used in transformers for position encoding) and injected into the network's internal layers.</p>
+
+  <div class="aside">
+    <div class="label">Intuition for timestep conditioning</div>
+    <p>The network needs to know $t$ because the denoising task changes qualitatively across the schedule. At high $t$ (very noisy), the network guesses global structure — "is this a face or a landscape?" At low $t$ (nearly clean), the network fills in fine detail — "what color is the iris of this eye?" The same architecture with a different value of $t$ acts as a different function.</p>
+  </div>
+</section>
+
+<!-- ============ 5. WHAT THE NETWORK PREDICTS ============ -->
+<section id="predict">
+  <div class="chapter-mark"><span class="num">5</span> Parameterizations</div>
+  <h2>Three ways to think about <em>what the network predicts</em></h2>
+
+  <p>The reverse step formula requires predicting the mean $\mu_\theta(x_t, t)$. But there are several equivalent ways to parameterize this — different quantities the network can predict, all of which produce the same mean when plugged back into the formula.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Three equivalent prediction targets — same objective, different views</text>
+      <!-- Three columns -->
+      <g transform="translate(0, 60)">
+        <!-- ε-prediction -->
+        <g transform="translate(130, 0)">
+          <rect x="-90" y="0" width="180" height="200" rx="6" fill="#fcf8ee" stroke="#3a5a72" stroke-width="1.5"/>
+          <text y="-8" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#3a5a72" font-weight="600" letter-spacing="0.1em">ε-PREDICTION</text>
+          <text y="28" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">"predict the noise"</text>
+          <text y="58" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">network outputs: ε̂</text>
+          <text y="86" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">loss: ‖ε − ε̂‖²</text>
+          <line x1="-70" y1="102" x2="70" y2="102" stroke="#e2d8c2" stroke-width="0.5"/>
+          <text y="124" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">Used by DDPM</text>
+          <text y="144" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">Most common in</text>
+          <text y="160" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">practice</text>
+          <circle cy="184" r="6" fill="#3a5a72"/>
+          <text x="14" y="188" font-family="JetBrains Mono,monospace" font-size="10" fill="#3a5a72" font-weight="600">default choice</text>
+        </g>
+        <!-- x₀-prediction -->
+        <g transform="translate(360, 0)">
+          <rect x="-90" y="0" width="180" height="200" rx="6" fill="#fcf8ee" stroke="#b88528" stroke-width="1.5"/>
+          <text y="-8" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#b88528" font-weight="600" letter-spacing="0.1em">x₀-PREDICTION</text>
+          <text y="28" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">"predict the clean data"</text>
+          <text y="58" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">network outputs: x̂₀</text>
+          <text y="86" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">loss: ‖x₀ − x̂₀‖²</text>
+          <line x1="-70" y1="102" x2="70" y2="102" stroke="#e2d8c2" stroke-width="0.5"/>
+          <text y="124" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">Direct output is</text>
+          <text y="144" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">interpretable as a</text>
+          <text y="160" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">"guess" of final image</text>
+        </g>
+        <!-- v-prediction -->
+        <g transform="translate(590, 0)">
+          <rect x="-90" y="0" width="180" height="200" rx="6" fill="#fcf8ee" stroke="#8a3a5e" stroke-width="1.5"/>
+          <text y="-8" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#8a3a5e" font-weight="600" letter-spacing="0.1em">v-PREDICTION</text>
+          <text y="28" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">"predict the velocity"</text>
+          <text y="58" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">v = √ᾱ·ε − √(1-ᾱ)·x₀</text>
+          <text y="86" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">loss: ‖v − v̂‖²</text>
+          <line x1="-70" y1="102" x2="70" y2="102" stroke="#e2d8c2" stroke-width="0.5"/>
+          <text y="124" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">Numerically stabler</text>
+          <text y="144" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">at extreme timesteps.</text>
+          <text y="160" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">Used in SD 2.x+</text>
+        </g>
+      </g>
+    </svg>
+    <figcaption>
+      Three equivalent prediction parameterizations. The network can predict the noise $\epsilon$ that was added, the clean data $x_0$ directly, or a "velocity" $v$ that blends the two. All three are mathematically equivalent — they just rearrange terms. In practice, $\epsilon$-prediction is the most common choice.
+      <span class="src">Original SVG</span>
+    </figcaption>
+  </figure>
+
+  <p>The relationship between them is straightforward. If the network predicts $\hat{\epsilon}$, we can recover $\hat{x}_0$:</p>
+
+  <div class="math-display">$$\hat{x}_0 \;=\; \frac{x_t - \sqrt{1-\bar{\alpha}_t}\,\hat{\epsilon}}{\sqrt{\bar{\alpha}_t}}$$</div>
+
+  <p>And vice versa. The loss and the gradients are identical; only the human interpretation changes.</p>
+</section>
+
+<!-- ============ 6. TRAINING ============ -->
+<section id="training">
+  <div class="chapter-mark"><span class="num">6</span> Training</div>
+  <h2>The beautifully <em>simple</em> loss</h2>
+
+  <p>The principled training objective for diffusion models derives from the variational lower bound (ELBO), which decomposes into a sum of KL divergences between the learned reverse steps and the true forward posteriors. The derivation is long and involves telescoping products of Gaussians.</p>
+
+  <p>But here is the remarkable result: Ho et al. (2020) showed that you can throw away most of the structure and use a <em>dead-simple</em> objective that works even better:</p>
+
+  <div class="math-display">$$\mathcal{L}_{\text{simple}} \;=\; \mathbb{E}_{t,\, x_0,\, \epsilon}\!\left[\, \|\epsilon - \epsilon_\theta(x_t, t)\|^2 \,\right]$$</div>
+
+  <p>That's it. Sample a training image $x_0$. Pick a random timestep $t$. Sample noise $\epsilon$. Compute the noisy version $x_t$. Ask the network to predict $\epsilon$. Penalize the squared error. Repeat.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">The training loop — four steps, embarrassingly parallel</text>
+      <!-- Step 1 -->
+      <g transform="translate(100,80)">
+        <rect x="-60" y="-30" width="120" height="60" rx="4" fill="#3a5a72"/>
+        <text y="-8" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">① SAMPLE</text>
+        <text y="10" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" opacity="0.9">x₀ from data</text>
+        <text y="24" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" opacity="0.9">t ~ Uniform(1,T)</text>
+        <text y="38" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" opacity="0.9">ε ~ N(0,I)</text>
+      </g>
+      <!-- Arrow -->
+      <line x1="164" y1="80" x2="216" y2="80" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-fwd)"/>
+      <!-- Step 2 -->
+      <g transform="translate(280,80)">
+        <rect x="-58" y="-30" width="116" height="60" rx="4" fill="#506348"/>
+        <text y="-8" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">② NOISE</text>
+        <text y="10" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" opacity="0.9">x_t = √ᾱ_t·x₀</text>
+        <text y="24" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" opacity="0.9">  + √(1-ᾱ_t)·ε</text>
+      </g>
+      <line x1="342" y1="80" x2="394" y2="80" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-fwd)"/>
+      <!-- Step 3 -->
+      <g transform="translate(460,80)">
+        <rect x="-60" y="-30" width="120" height="60" rx="4" fill="#b88528"/>
+        <text y="-8" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">③ PREDICT</text>
+        <text y="10" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" opacity="0.9">ε̂ = ε_θ(x_t, t)</text>
+        <text y="24" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" opacity="0.9">via U-Net</text>
+      </g>
+      <line x1="524" y1="80" x2="576" y2="80" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-fwd)"/>
+      <!-- Step 4 -->
+      <g transform="translate(640,80)">
+        <rect x="-56" y="-30" width="112" height="60" rx="4" fill="#b03d1a"/>
+        <text y="-8" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">④ LOSS</text>
+        <text y="10" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" opacity="0.9">‖ε − ε̂‖²</text>
+        <text y="24" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" opacity="0.9">backprop</text>
+      </g>
+      <!-- Feedback arrow: orthogonal right-angle path (down, across, up) -->
+      <polyline points="640,114 640,180 100,180 100,114" stroke="#b03d1a" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#ar-rev)"/>
+      <text x="370" y="196" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a" letter-spacing="0.1em">gradient update → repeat</text>
+      <!-- Bottom note -->
+      <g transform="translate(60,236)">
+        <rect x="0" y="0" width="600" height="30" rx="4" fill="#fdf3da" stroke="#b88528"/>
+        <text x="300" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">No adversarial training · no mode collapse · no careful balancing — just MSE on noise predictions</text>
+      </g>
+    </svg>
+    <figcaption>
+      The entire training loop of a diffusion model fits on a napkin. No adversarial training, no mode collapse, no careful balancing of competing objectives — just mean squared error between the sampled noise and the network's prediction of that noise. This simplicity is why diffusion models are so stable to train compared to GANs.
+      <span class="src">Original SVG · after Ho et al. (2020), <em>DDPM</em></span>
+    </figcaption>
+  </figure>
+
+  <p>Compare this to GAN training, where you must carefully balance a generator and discriminator, manage mode collapse, and tune a fragile adversarial objective. Diffusion training is a single regression loss. It "just works."</p>
+</section>
+
+<!-- ============ 7. U-NET ============ -->
+<section id="unet">
+  <div class="chapter-mark"><span class="num">7</span> Architecture</div>
+  <h2>The U-Net: an <em>encoder-decoder</em> with skip connections</h2>
+
+  <p>The denoising network $\epsilon_\theta(x_t, t)$ is almost always a <span class="term">U-Net</span> — a convolutional architecture originally designed for biomedical image segmentation (Ronneberger et al., 2015) that turned out to be perfectly suited for denoising. The key properties:</p>
+
+  <ul class="fancy">
+    <li><strong>Encoder path (downsampling):</strong> a series of residual blocks that progressively reduce spatial resolution while increasing channel count. Each level captures features at a different scale.</li>
+    <li><strong>Decoder path (upsampling):</strong> mirrors the encoder, progressively increasing spatial resolution back to the input size.</li>
+    <li><strong>Skip connections:</strong> feature maps from the encoder are concatenated with the corresponding decoder level. This preserves fine spatial detail that would otherwise be lost to downsampling — critical for a denoising task where pixel-level precision matters.</li>
+    <li><strong>Timestep conditioning:</strong> the timestep $t$ is encoded as a sinusoidal embedding and injected into every residual block, typically via adaptive group normalization (AdaGN). This allows the same network to act as a different denoising function at each timestep.</li>
+    <li><strong>Self-attention at low resolutions:</strong> at the bottleneck (e.g., $16 \times 16$ or $8 \times 8$), self-attention layers capture global, long-range dependencies — "this is a face, not a landscape."</li>
+  </ul>
+
+  <figure>
+    <svg viewBox="0 0 720 400" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">The U-Net: encode, bottleneck, decode — with skip connections at every level</text>
+      <!-- ENCODER COLUMN (left, x=60..160) -->
+      <!-- Enc1 -->
+      <rect x="60" y="50" width="120" height="54" rx="4" fill="#3a5a72"/>
+      <text x="120" y="72" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">ResBlock</text>
+      <text x="120" y="88" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">64×64 · ch=128</text>
+      <!-- vertical down arrow Enc1 → Enc2 -->
+      <line x1="120" y1="104" x2="120" y2="150" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-fwd)"/>
+      <text x="134" y="132" font-family="JetBrains Mono,monospace" font-size="8" fill="#7a7165">↓ 2×</text>
+      <!-- Enc2 -->
+      <rect x="60" y="154" width="120" height="54" rx="4" fill="#3a5a72"/>
+      <text x="120" y="176" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">ResBlock</text>
+      <text x="120" y="192" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">32×32 · ch=256</text>
+      <!-- vertical down arrow Enc2 → Bottleneck -->
+      <line x1="120" y1="208" x2="120" y2="240" stroke="#7a7165" stroke-width="1.5"/>
+      <line x1="120" y1="240" x2="230" y2="240" stroke="#7a7165" stroke-width="1.5"/>
+      <line x1="230" y1="240" x2="230" y2="254" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-fwd)"/>
+      <text x="134" y="236" font-family="JetBrains Mono,monospace" font-size="8" fill="#7a7165">↓ 2×</text>
+
+      <!-- BOTTLENECK (center-bottom) -->
+      <rect x="190" y="258" width="180" height="54" rx="4" fill="#b88528"/>
+      <text x="280" y="278" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">Bottleneck</text>
+      <text x="280" y="294" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">8×8 · ch=512 · self-attn</text>
+
+      <!-- Bottleneck → Dec2: right then up (orthogonal) -->
+      <line x1="370" y1="285" x2="470" y2="285" stroke="#7a7165" stroke-width="1.5"/>
+      <line x1="470" y1="285" x2="470" y2="212" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-rev)"/>
+      <text x="476" y="248" font-family="JetBrains Mono,monospace" font-size="8" fill="#7a7165">↑ 2×</text>
+
+      <!-- DECODER COLUMN (right, x=420..540) -->
+      <!-- Dec2 -->
+      <rect x="420" y="154" width="120" height="54" rx="4" fill="#506348"/>
+      <text x="480" y="176" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">ResBlock</text>
+      <text x="480" y="192" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">32×32 · ch=256</text>
+      <!-- vertical up arrow Dec2 → Dec1 -->
+      <line x1="480" y1="154" x2="480" y2="108" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-rev)"/>
+      <text x="494" y="136" font-family="JetBrains Mono,monospace" font-size="8" fill="#7a7165">↑ 2×</text>
+      <!-- Dec1 -->
+      <rect x="420" y="50" width="120" height="54" rx="4" fill="#506348"/>
+      <text x="480" y="72" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">ResBlock</text>
+      <text x="480" y="88" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">64×64 · ch=128</text>
+
+      <!-- OUTPUT -->
+      <line x1="540" y1="77" x2="590" y2="77" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-fwd)"/>
+      <rect x="594" y="54" width="70" height="46" rx="4" fill="#fff" stroke="#7a7165"/>
+      <text x="629" y="74" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#3d3830" font-weight="600">ε̂</text>
+      <text x="629" y="90" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">output</text>
+
+      <!-- SKIP CONNECTIONS (horizontal, dashed) -->
+      <!-- Skip 1: Enc1 → Dec1 (same row, y=77) -->
+      <line x1="180" y1="68" x2="420" y2="68" stroke="#b03d1a" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ar-skip)"/>
+      <text x="300" y="62" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a">skip (concat)</text>
+      <!-- Skip 2: Enc2 → Dec2 (same row, y=181) -->
+      <line x1="180" y1="172" x2="420" y2="172" stroke="#b03d1a" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ar-skip)"/>
+      <text x="300" y="166" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a">skip (concat)</text>
+
+      <!-- TIMESTEP INJECTION -->
+      <rect x="220" y="340" width="120" height="28" rx="14" fill="#8a3a5e"/>
+      <text x="280" y="358" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">t → sin emb</text>
+      <!-- vertical line up to bottleneck -->
+      <line x1="280" y1="340" x2="280" y2="312" stroke="#8a3a5e" stroke-width="1" stroke-dasharray="3,2"/>
+      <!-- horizontal branches to encoder and decoder columns -->
+      <line x1="280" y1="336" x2="120" y2="336" stroke="#8a3a5e" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="120" y1="336" x2="120" y2="208" stroke="#8a3a5e" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="280" y1="336" x2="480" y2="336" stroke="#8a3a5e" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="480" y1="336" x2="480" y2="208" stroke="#8a3a5e" stroke-width="1" stroke-dasharray="3,2"/>
+      <text x="430" y="384" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#8a3a5e">injected via AdaGN into every ResBlock</text>
+
+      <!-- Column labels -->
+      <text x="120" y="44" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.1em">ENCODER</text>
+      <text x="480" y="44" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.1em">DECODER</text>
+
+      <defs>
+        <marker id="ar-skip" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#b03d1a"/></marker>
+      </defs>
+    </svg>
+    <figcaption>
+      The U-Net architecture for denoising. Feature maps descend through the encoder (downsampling, more channels), pass through a bottleneck with self-attention, and ascend through the decoder (upsampling). Skip connections (dashed red lines) concatenate encoder features with decoder features at matching resolutions. The timestep embedding is injected into every residual block so the same network handles all $T$ denoising steps.
+      <span class="src">Original SVG · architecture after Ronneberger et al. (2015) and Ho et al. (2020)</span>
+    </figcaption>
+  </figure>
+
+  <div class="aside">
+    <div class="label">Modern alternative: the Diffusion Transformer (DiT)</div>
+    <p>Since 2023, the U-Net has been increasingly replaced by <strong>vision transformers</strong> — the DiT architecture (Peebles &amp; Xie, 2023). DiT patches the image into tokens, processes them with standard transformer blocks using adaptive layer norm for timestep conditioning, and reconstructs the denoised output. DALL-E 3, Stable Diffusion 3, Flux, and Sora all use DiT variants. The advantage: clean scaling laws — bigger transformers systematically produce better FID scores, following the same pattern as LLMs.</p>
+  </div>
+</section>
+
+<!-- ============ 8. DDPM SAMPLING ============ -->
+<section id="ddpm">
+  <div class="chapter-mark"><span class="num">8</span> Sampling</div>
+  <h2>DDPM: the <em>thousand-step</em> walk</h2>
+
+  <p>Once the network is trained, generation is the reverse process running from $t=T$ down to $t=0$:</p>
+
+  <pre class="diagram">
+  Sample x_T ~ N(0, I)                      ← start from pure noise
+  For t = T, T-1, ..., 1:
+      z ~ N(0, I) if t > 1, else z = 0      ← stochastic term
+      ε̂ = ε_θ(x_t, t)                       ← ask the network
+      x_{t-1} = 1/√α_t · (x_t - β_t/√(1-ᾱ_t) · ε̂) + σ_t · z
+  Return x_0</pre>
+
+  <p>Each step calls the neural network once, so with $T=1000$ timesteps, generating a single image requires <strong>1000 forward passes</strong> through the U-Net. This is why DDPM sampling is slow. Each step is cheap, but there are a thousand of them.</p>
+
+  <p>The stochastic term $z$ adds a small amount of fresh noise at each step, which acts as a corrective jitter that keeps the sample on the data manifold. Setting $z=0$ at the final step ($t=1$) gives a clean output.</p>
+
+  <div class="aside warn">
+    <div class="label">The speed problem</div>
+    <p>At $T=1000$ steps per image, generating a $512 \times 512$ image on a modern GPU takes 10–30 seconds. For an interactive application, you need faster sampling — which brings us to DDIM.</p>
+  </div>
+</section>
+
+<!-- ============ 9. DDIM ============ -->
+<section id="ddim">
+  <div class="chapter-mark"><span class="num">9</span> Faster sampling</div>
+  <h2>DDIM and <em>accelerated</em> sampling</h2>
+
+  <p>Song et al. (2020) made a clever observation: the DDPM training objective only constrains the <em>marginals</em> $q(x_t \mid x_0)$ at each timestep — not the joint distribution $q(x_{1:T} \mid x_0)$. This means we can define a <em>different</em> reverse process that matches the same marginals but takes bigger steps.</p>
+
+  <p><span class="term">DDIM</span> (Denoising Diffusion Implicit Models) rewrites the update rule with a tunable noise parameter $\sigma_t$:</p>
+
+  <div class="math-display">$$x_{t-1} = \sqrt{\bar{\alpha}_{t-1}} \underbrace{\left(\frac{x_t - \sqrt{1-\bar{\alpha}_t}\,\hat{\epsilon}}{\sqrt{\bar{\alpha}_t}}\right)}_{\text{predicted } x_0} + \sqrt{1-\bar{\alpha}_{t-1}-\sigma_t^2}\;\hat{\epsilon} + \sigma_t\,\epsilon_t$$</div>
+
+  <p>The key insight: when $\sigma_t = 0$, the process is <strong>fully deterministic</strong>. Given the same starting noise $x_T$, you always get the same $x_0$. And because the trajectory is deterministic, you can take much larger steps — jumping from $x_T$ to $x_{T-50}$ to $x_{T-100}$ and so on — without the accumulated randomness that would cause DDPM to go off-track.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">DDPM (1000 steps) vs DDIM (20–50 steps)</text>
+      <!-- DDPM path: many small steps -->
+      <g transform="translate(40,60)">
+        <text x="300" y="0" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#b03d1a" font-weight="600" letter-spacing="0.1em">DDPM: T=1000 STOCHASTIC STEPS</text>
+        <rect x="0" y="14" width="600" height="50" rx="4" fill="#fcf8ee" stroke="#e2d8c2"/>
+        <!-- Many tiny step markers -->
+        <g stroke="#b03d1a" stroke-width="0.5">
+          <line x1="12" y1="20" x2="12" y2="58"/>
+          <line x1="18" y1="20" x2="18" y2="58"/>
+          <line x1="24" y1="20" x2="24" y2="58"/>
+          <line x1="30" y1="20" x2="30" y2="58"/>
+          <line x1="36" y1="20" x2="36" y2="58"/>
+          <line x1="42" y1="20" x2="42" y2="58"/>
+          <line x1="48" y1="20" x2="48" y2="58"/>
+          <line x1="54" y1="20" x2="54" y2="58"/>
+          <line x1="60" y1="20" x2="60" y2="58"/>
+          <line x1="66" y1="20" x2="66" y2="58"/>
+        </g>
+        <text x="90" y="44" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a">· · · 1000 tiny steps · · ·</text>
+        <g stroke="#b03d1a" stroke-width="0.5">
+          <line x1="540" y1="20" x2="540" y2="58"/>
+          <line x1="546" y1="20" x2="546" y2="58"/>
+          <line x1="552" y1="20" x2="552" y2="58"/>
+          <line x1="558" y1="20" x2="558" y2="58"/>
+          <line x1="564" y1="20" x2="564" y2="58"/>
+          <line x1="570" y1="20" x2="570" y2="58"/>
+          <line x1="576" y1="20" x2="576" y2="58"/>
+          <line x1="582" y1="20" x2="582" y2="58"/>
+          <line x1="588" y1="20" x2="588" y2="58"/>
+        </g>
+        <!-- Labels -->
+        <text x="6" y="76" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a">x_T</text>
+        <text x="588" y="76" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a">x_0</text>
+        <text x="300" y="76" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#7a7165">each step adds small random noise → stochastic</text>
+      </g>
+      <!-- DDIM path: few big steps -->
+      <g transform="translate(40,170)">
+        <text x="300" y="0" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3a5a72" font-weight="600" letter-spacing="0.1em">DDIM: S=20-50 DETERMINISTIC STEPS</text>
+        <rect x="0" y="14" width="600" height="50" rx="4" fill="#fcf8ee" stroke="#e2d8c2"/>
+        <!-- Fewer, bigger step markers -->
+        <g stroke="#3a5a72" stroke-width="2">
+          <line x1="10" y1="20" x2="10" y2="58"/>
+          <line x1="40" y1="20" x2="40" y2="58"/>
+          <line x1="70" y1="20" x2="70" y2="58"/>
+          <line x1="110" y1="20" x2="110" y2="58"/>
+          <line x1="160" y1="20" x2="160" y2="58"/>
+          <line x1="220" y1="20" x2="220" y2="58"/>
+          <line x1="300" y1="20" x2="300" y2="58"/>
+          <line x1="380" y1="20" x2="380" y2="58"/>
+          <line x1="450" y1="20" x2="450" y2="58"/>
+          <line x1="510" y1="20" x2="510" y2="58"/>
+          <line x1="560" y1="20" x2="560" y2="58"/>
+          <line x1="590" y1="20" x2="590" y2="58"/>
+        </g>
+        <text x="6" y="76" font-family="JetBrains Mono,monospace" font-size="9" fill="#3a5a72">x_T</text>
+        <text x="588" y="76" font-family="JetBrains Mono,monospace" font-size="9" fill="#3a5a72">x_0</text>
+        <text x="300" y="76" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#7a7165">big jumps, no added noise → deterministic and fast</text>
+      </g>
+      <!-- Speed comparison -->
+      <g transform="translate(60,250)">
+        <rect x="0" y="0" width="600" height="30" rx="4" fill="#fdf3da" stroke="#b88528"/>
+        <text x="300" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">Same model, same weights, same training — DDIM just changes the sampling procedure</text>
+      </g>
+    </svg>
+    <figcaption>
+      DDPM takes 1000 small stochastic steps; DDIM takes 20–50 big deterministic jumps. Both use the same trained network — DDIM is a <em>sampling</em> strategy, not a retraining. Quality is comparable; speed improves by 20–50×. Beyond DDIM, DPM-Solver and DPM-Solver++ use higher-order ODE solvers to achieve good quality in as few as 10 steps.
+      <span class="src">Original SVG · concept after Song et al. (2020), <em>DDIM</em></span>
+    </figcaption>
+  </figure>
+
+  <p>The practical consequence: <strong>you can use a model trained with the DDPM objective and sample from it with DDIM at inference time</strong>. No retraining needed. Just change the sampling loop. This is one of the most useful separations in the diffusion toolbox: the training objective and the sampling procedure are decoupled.</p>
+</section>
+
+<!-- ============ 10. CFG ============ -->
+<section id="cfg">
+  <div class="chapter-mark"><span class="num">10</span> Guidance</div>
+  <h2>Classifier-free guidance: <em>the quality knob</em></h2>
+
+  <p>Diffusion models generate diverse samples by default — but sometimes diversity is the enemy. When you prompt "a red sports car on a mountain road," you want the model to commit to that description, not hedge. <span class="term">Classifier-free guidance</span> (CFG) gives you a knob to trade diversity for fidelity to the condition.</p>
+
+  <p>The idea: during training, randomly replace the text condition $c$ with a null/empty token $\varnothing$ some fraction of the time (typically 10–20%). This teaches the network to produce both <em>conditional</em> predictions $\epsilon_\theta(x_t, t, c)$ and <em>unconditional</em> ones $\epsilon_\theta(x_t, t, \varnothing)$.</p>
+
+  <p>At sampling time, amplify the difference between the two:</p>
+
+  <div class="math-display">$$\hat{\epsilon} \;=\; \underbrace{\epsilon_\theta(x_t, t, \varnothing)}_{\text{unconditional}} \;+\; w \cdot \underbrace{\left(\epsilon_\theta(x_t, t, c) - \epsilon_\theta(x_t, t, \varnothing)\right)}_{\text{"what the condition changes"}}$$</div>
+
+  <p>When $w=1$, this is standard conditional generation. When $w>1$ (typical values: 3–15), you amplify the effect of the condition — the model pushes harder toward "this is a red car" and away from "this is a generic image." Higher $w$ means more faithful outputs but less diversity; lower $w$ means more creative, surprising, but potentially off-prompt results.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Classifier-free guidance: two forward passes, one combined prediction</text>
+      <!-- Unconditional branch -->
+      <g transform="translate(120,80)">
+        <rect x="-80" y="-28" width="160" height="56" rx="4" fill="#fcf8ee" stroke="#7a7165"/>
+        <text y="-8" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165" font-weight="600">ε_θ(x_t, t, ∅)</text>
+        <text y="12" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">unconditional</text>
+      </g>
+      <!-- Conditional branch -->
+      <g transform="translate(360,80)">
+        <rect x="-80" y="-28" width="160" height="56" rx="4" fill="#fcf8ee" stroke="#3a5a72" stroke-width="1.5"/>
+        <text y="-8" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3a5a72" font-weight="600">ε_θ(x_t, t, c)</text>
+        <text y="12" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#3a5a72">conditional</text>
+      </g>
+      <!-- Guidance combination -->
+      <g transform="translate(570,80)">
+        <rect x="-80" y="-28" width="160" height="56" rx="4" fill="#b88528"/>
+        <text y="-8" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">ε̂ = uncond + w·Δ</text>
+        <text y="12" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#fff" opacity="0.9">guided prediction</text>
+      </g>
+      <!-- Arrows -->
+      <line x1="200" y1="80" x2="270" y2="80" stroke="#7a7165" stroke-width="1.2" marker-end="url(#ar-fwd)"/>
+      <text x="235" y="72" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">subtract</text>
+      <!-- Delta arrow -->
+      <line x1="440" y1="80" x2="486" y2="80" stroke="#3a5a72" stroke-width="1.5" marker-end="url(#ar-fwd)"/>
+      <text x="465" y="72" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#3a5a72">× w</text>
+      <!-- Bottom: w scale -->
+      <g transform="translate(120,160)">
+        <text x="0" y="0" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">w = 1</text>
+        <text x="0" y="14" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#7a7165">standard</text>
+        <rect x="80" y="-4" width="400" height="8" rx="4" fill="#ebe2d0"/>
+        <rect x="80" y="-4" width="400" height="8" rx="4" fill="url(#w-grad)"/>
+        <text x="500" y="0" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a">w = 7.5</text>
+        <text x="500" y="14" font-family="Fraunces,serif" font-style="italic" font-size="10" fill="#b03d1a">strongly guided</text>
+        <text x="280" y="30" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#3d3830">← more diverse · · · more faithful →</text>
+      </g>
+      <defs>
+        <linearGradient id="w-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#7a7165"/>
+          <stop offset="100%" stop-color="#b03d1a"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <figcaption>
+      CFG runs two forward passes per sampling step — one with the text prompt, one without — and amplifies the difference by the guidance scale $w$. This is why CFG roughly doubles inference cost. The tradeoff: higher $w$ produces images that match the prompt more faithfully but with less variety.
+      <span class="src">Original SVG · concept after Ho &amp; Salimans (2022)</span>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ============ 11. FIELD NOTES ============ -->
+<section id="fieldnotes">
+  <div class="chapter-mark"><span class="num">11</span> Field notes</div>
+  <h2>Training a diffusion model <em>on MNIST</em></h2>
+
+  <p>Theory is one thing; watching it work is another. Using a simple U-Net trained on MNIST (28×28 grayscale digits), here is what we actually observe when we run the experiments from the companion notebook.</p>
+
+  <div class="aside">
+    <div class="label">Source</div>
+    <p>The experiments summarized here are from the <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/04-diffusion-models/notebook.ipynb">Module 04 notebook</a> in the <code>learn-generative-ai</code> repo. The notebook trains a ~2M parameter U-Net from scratch for 15 epochs on MNIST using the DDPM objective with a linear noise schedule ($T=1000$).</p>
+  </div>
+
+  <h3>The forward process in action</h3>
+
+  <p>Apply the closed-form noising formula $x_t = \sqrt{\bar{\alpha}_t}\,x_0 + \sqrt{1-\bar{\alpha}_t}\,\epsilon$ to a clean digit at timesteps $t \in \{0, 100, 250, 500, 750, 1000\}$. The digit is recognizable up to about $t=250$; by $t=500$ only the coarsest blob remains; by $t=750$ it is indistinguishable from noise to the human eye.</p>
+
+  <h3>Training dynamics</h3>
+
+  <p>The loss curve descends smoothly — no mode collapse, no oscillation, no sudden divergence. This is the signature advantage of diffusion over adversarial training. After 15 epochs (~5 minutes on a T4), the model produces recognizable digits. After further training, they become sharp and varied.</p>
+
+  <h3>DDPM vs DDIM on the same model</h3>
+
+  <p>Running DDPM sampling (1000 steps) produces high-quality digits — clean edges, good variety. Running DDIM on the <em>same trained model</em> with only 50 steps produces digits of comparable quality in 1/20th the time. Dropping to 20 steps introduces slight blurriness but digits remain identifiable. At 10 steps, quality degrades noticeably. The sweet spot for DDIM on this model is around 50 steps.</p>
+
+  <h3>What the model predicts at different timesteps</h3>
+
+  <p>Visualizing the predicted $\hat{x}_0$ (the model's "guess" of the clean image) at various $t$ reveals a fascinating progression. At $t=900$ (very noisy), the model's guess is a blurry blob — "this is probably a digit of some kind." At $t=500$, the shape is roughly right — "this is an 8, not a 3." At $t=100$, the prediction is nearly pixel-perfect — the model is doing fine refinement.</p>
+
+  <div class="aside insight">
+    <div class="label">Pedagogical point</div>
+    <p>This progression mirrors how humans draw: coarse structure first (the overall shape), then medium-scale features (strokes, loops), then fine detail (edges, serifs). The noise schedule naturally imposes a coarse-to-fine hierarchy on the generation process — and the model learns to match it.</p>
+  </div>
+
+  <h3>Loss per timestep: where is denoising hardest?</h3>
+
+  <p>Computing the average loss at each $t$ reveals a curve that peaks in the middle of the schedule — around $t \approx 400\text{–}600$. At very high $t$ (near pure noise), the model can't do much better than guessing the dataset mean; the loss is moderately high but not the worst. At very low $t$ (nearly clean), the task is easy and the loss is small. The peak in the middle is where the model is working hardest — where there's enough signal to attempt reconstruction but enough noise to make it genuinely difficult.</p>
+
+  <h3>Noise-space interpolation</h3>
+
+  <p>Fix two random noise vectors $z_1$ and $z_2$, DDIM-sample from each to get two different digit images, then interpolate smoothly between $z_1$ and $z_2$ (using spherical linear interpolation — slerp — to stay on the unit sphere). The intermediate images transition smoothly from one digit to another — a 7 morphs through ambiguous forms into a 2. This demonstrates that the learned mapping from noise space to data space is smooth and continuous, not a fragmented patchwork.</p>
+</section>
+
+<!-- ============ 12. LATENT DIFFUSION ============ -->
+<section id="latent">
+  <div class="chapter-mark"><span class="num">12</span> Latent diffusion</div>
+  <h2>Don't diffuse <em>pixels</em> — diffuse latents</h2>
+
+  <p>Running diffusion directly on a $512 \times 512 \times 3$ image means the U-Net operates on tensors with nearly 800,000 dimensions at every timestep. Most of these dimensions encode imperceptible high-frequency details and spatial redundancy. The model wastes capacity on information that humans cannot distinguish.</p>
+
+  <p><span class="term">Latent diffusion</span> (Rombach et al., 2022) — commercialized as <strong>Stable Diffusion</strong> — solves this by separating the problem into two stages:</p>
+
+  <ol class="fancy">
+    <li><strong>Perceptual compression (autoencoder):</strong> Train a VAE to encode images $x$ into a compact latent representation $z = \mathcal{E}(x)$ and decode them back: $\hat{x} = \mathcal{D}(z)$. Typical compression: $8\times$ spatial downsampling with 4 latent channels, giving a <strong>48× reduction</strong> in dimensionality.</li>
+    <li><strong>Semantic generation (diffusion):</strong> Run the entire diffusion process — forward noise, reverse denoising — in the latent space $z$ rather than pixel space $x$. The U-Net operates on much smaller tensors.</li>
+  </ol>
+
+  <figure>
+    <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <text x="360" y="18" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Latent Diffusion: compress first, diffuse second</text>
+      <!-- Training pipeline (top) -->
+      <text x="360" y="46" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.1em">TRAINING</text>
+      <!-- Image -->
+      <g transform="translate(80,100)">
+        <rect x="-40" y="-34" width="80" height="68" rx="4" fill="#3a5a72"/>
+        <text y="-8" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">Image x</text>
+        <text y="8" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity="0.8">512×512×3</text>
+        <text y="20" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity="0.8">786K dims</text>
+      </g>
+      <!-- Encoder -->
+      <g transform="translate(190,100)">
+        <rect x="-28" y="-26" width="56" height="52" rx="4" fill="#b88528"/>
+        <text y="4" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">E</text>
+      </g>
+      <line x1="120" y1="100" x2="158" y2="100" stroke="#7a7165" stroke-width="1.2" marker-end="url(#ar-fwd)"/>
+      <!-- Latent z₀ -->
+      <g transform="translate(290,100)">
+        <rect x="-36" y="-26" width="72" height="52" rx="4" fill="#8a3a5e"/>
+        <text y="-6" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">z₀</text>
+        <text y="10" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity="0.8">64×64×4</text>
+        <text y="22" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity="0.8">16K dims</text>
+      </g>
+      <line x1="218" y1="100" x2="250" y2="100" stroke="#7a7165" stroke-width="1.2" marker-end="url(#ar-fwd)"/>
+      <!-- + noise → z_t -->
+      <text x="370" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165">+ε →</text>
+      <g transform="translate(430,100)">
+        <rect x="-30" y="-26" width="60" height="52" rx="4" fill="#8a3a5e" opacity="0.6"/>
+        <text y="4" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">z_t</text>
+      </g>
+      <line x1="464" y1="100" x2="496" y2="100" stroke="#7a7165" stroke-width="1.2" marker-end="url(#ar-fwd)"/>
+      <!-- U-Net -->
+      <g transform="translate(560,100)">
+        <rect x="-52" y="-26" width="104" height="52" rx="4" fill="#b03d1a"/>
+        <text y="-4" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">U-Net / DiT</text>
+        <text y="12" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity="0.8">ε_θ(z_t, t, c)</text>
+      </g>
+      <!-- Text conditioning -->
+      <g transform="translate(560,56)">
+        <rect x="-46" y="-12" width="92" height="24" rx="12" fill="#506348"/>
+        <text y="4" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">text → CLIP</text>
+      </g>
+      <line x1="560" y1="68" x2="560" y2="72" stroke="#506348" stroke-width="1"/>
+      <!-- Generation pipeline (bottom) -->
+      <text x="360" y="170" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.1em">GENERATION</text>
+      <!-- z_T noise -->
+      <g transform="translate(150,220)">
+        <rect x="-36" y="-26" width="72" height="52" rx="4" fill="#b03d1a"/>
+        <text y="-4" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">z_T</text>
+        <text y="12" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity="0.8">noise</text>
+      </g>
+      <!-- DDIM -->
+      <g transform="translate(310,220)">
+        <rect x="-60" y="-26" width="120" height="52" rx="4" fill="#b03d1a"/>
+        <text y="-4" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">Reverse diff.</text>
+        <text y="12" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity="0.8">DDIM / DPM++</text>
+      </g>
+      <line x1="186" y1="220" x2="246" y2="220" stroke="#7a7165" stroke-width="1.2" marker-end="url(#ar-fwd)"/>
+      <!-- z_0 predicted -->
+      <g transform="translate(450,220)">
+        <rect x="-30" y="-26" width="60" height="52" rx="4" fill="#8a3a5e"/>
+        <text y="4" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">z₀</text>
+      </g>
+      <line x1="374" y1="220" x2="416" y2="220" stroke="#7a7165" stroke-width="1.2" marker-end="url(#ar-fwd)"/>
+      <!-- Decoder -->
+      <g transform="translate(530,220)">
+        <rect x="-28" y="-26" width="56" height="52" rx="4" fill="#b88528"/>
+        <text y="4" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">D</text>
+      </g>
+      <line x1="484" y1="220" x2="498" y2="220" stroke="#7a7165" stroke-width="1.2" marker-end="url(#ar-fwd)"/>
+      <!-- Output image -->
+      <g transform="translate(630,220)">
+        <rect x="-40" y="-34" width="80" height="68" rx="4" fill="#3a5a72"/>
+        <text y="-4" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">Image x̂</text>
+        <text y="12" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#fff" opacity="0.8">512×512×3</text>
+      </g>
+      <line x1="562" y1="220" x2="586" y2="220" stroke="#7a7165" stroke-width="1.2" marker-end="url(#ar-fwd)"/>
+      <!-- 48x label -->
+      <g transform="translate(240,146)">
+        <rect x="0" y="0" width="180" height="20" rx="4" fill="#fdf3da" stroke="#b88528"/>
+        <text x="90" y="14" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#b88528" font-weight="600">48× fewer dimensions</text>
+      </g>
+    </svg>
+    <figcaption>
+      Latent Diffusion separates the work. The autoencoder (E/D) compresses $512 \times 512 \times 3$ images into $64 \times 64 \times 4$ latent codes — a 48× reduction. The diffusion process runs entirely in this compact latent space, where the U-Net is cheaper to run, attention is affordable, and training is ~4× faster.
+      <span class="src">Original SVG · concept after Rombach et al. (2022), <em>Latent Diffusion / Stable Diffusion</em></span>
+    </figcaption>
+  </figure>
+
+  <p>The decomposition is clean: the autoencoder handles <em>perceptual compression</em> (removing imperceptible high-frequency detail), while the diffusion model handles <em>semantic generation</em> (learning the structure and content of images). The U-Net only needs to learn the hard part.</p>
+</section>
+
+<!-- ============ 13. MODERN ============ -->
+<section id="modern">
+  <div class="chapter-mark"><span class="num">13</span> Modern developments</div>
+  <h2>Where the field is <em>going</em></h2>
+
+  <h3>Flow matching</h3>
+
+  <p>Flow matching (Lipman et al., 2023) generalizes diffusion by learning a velocity field $v_\theta(x, t)$ that transports samples from a noise distribution to the data distribution along a continuous trajectory. The training objective is simpler than DDPM's:</p>
+
+  <div class="math-display">$$\mathcal{L}_\text{FM} = \mathbb{E}_{t,\, x_0,\, x_1}\!\left[\,\|v_\theta(x_t, t) - (x_1 - x_0)\|^2\,\right]$$</div>
+
+  <p>where $x_t = (1-t)\,x_0 + t\,x_1$ is a simple linear interpolation between noise ($x_0$) and data ($x_1$). The learned trajectories tend to be straighter than diffusion paths, enabling fewer sampling steps. Stable Diffusion 3 and Flux are built on rectified flow matching rather than classical DDPM.</p>
+
+  <h3>Consistency models</h3>
+
+  <p>Consistency models (Song et al., 2023) train a function $f_\theta$ that maps <em>any point on a diffusion trajectory</em> directly to the trajectory's endpoint (the clean data), enabling <strong>one-step generation</strong>. The key constraint is self-consistency: for any two points on the same trajectory, the model must predict the same endpoint. This is enforced during training by requiring $f_\theta(x_t, t) = f_{\theta^-}(\hat{x}_{t'}, t')$ where $\hat{x}_{t'}$ is one ODE solver step away.</p>
+
+  <h3>Diffusion Transformers (DiT)</h3>
+
+  <p>Peebles &amp; Xie (2023) replaced U-Nets with vision transformers, showing that scaling laws apply to diffusion architectures: bigger DiTs systematically produce better FID scores, following the same predictable curves as scaling LLMs. DALL-E 3, Stable Diffusion 3, Flux, and Sora all use DiT variants with billions of parameters.</p>
+
+  <h3>Beyond images</h3>
+
+  <p>The core framework — <em>corrupt with noise, learn to denoise</em> — is remarkably general. Diffusion models now generate video (Sora, Kling), audio and music (Stable Audio), 3D shapes (point cloud and NeRF diffusion), molecular structures for drug discovery, and even robot action trajectories (diffusion policies). The architecture changes; the principle does not.</p>
+</section>
+
+<!-- ============ 14. PLAYGROUND ============ -->
+<section id="playground">
+  <div class="chapter-mark"><span class="num">14</span> Playground</div>
+  <h2>Watch denoising happen <em>in 2D</em></h2>
+
+  <p>We can't run a real U-Net in the browser, but we <em>can</em> run exact diffusion on a simple 2D distribution. Below, a mixture of five Gaussians serves as the "data." The forward process dissolves the clusters into a uniform cloud of noise. The reverse process — using the analytically exact score function — reassembles them. Drag the slider or hit play to watch.</p>
+
+  <div class="demo" id="diffusion-demo">
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:14px;font-family:'JetBrains Mono',monospace;font-size:11px">
+      <button id="d-play">▶ Play reverse</button>
+      <button id="d-forward">▶ Play forward</button>
+      <button id="d-reset">↻ Reset</button>
+      <label style="display:flex;align-items:center;gap:6px;color:var(--ink-2)">
+        t = <input type="range" id="d-slider" min="0" max="1000" value="1000" style="width:200px"> <span id="d-t-val">1000</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;color:var(--ink-2)">
+        <input type="checkbox" id="d-arrows" style="margin:0"> show scores
+      </label>
+    </div>
+    <canvas id="d-canvas" width="600" height="400" style="width:100%;max-width:600px;border:1px solid var(--rule);border-radius:4px;background:#fff;display:block;margin:0 auto"></canvas>
+    <p style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);text-align:center" id="d-status">t = 1000 · pure noise · drag the slider or press play</p>
+  </div>
+
+  <p class="small" style="margin-top:12px">The score function $\nabla \log q(x_t)$ is computed analytically from the known Gaussian mixture. At each reverse step, particles follow the score toward the nearest cluster center. The result: structure emerges from noise, just as in a real diffusion model — but in two dimensions you can see every particle's journey.</p>
+</section>
+
+<div class="ornament">⁂ ⁂ ⁂</div>
+
+<!-- ============ 15. TAKEAWAYS ============ -->
+<section id="takeaways">
+  <div class="chapter-mark"><span class="num">15</span> Closing</div>
+  <h2>Takeaways &amp; <em>exercises</em></h2>
+
+  <h3>The six things to remember</h3>
+
+  <ol class="fancy">
+    <li><strong>Diffusion = destroy + un-destroy.</strong> The forward process adds noise step by step (fixed, no learning). The reverse process removes it (learned, one Gaussian at a time).</li>
+    <li><strong>The closed-form shortcut $x_t = \sqrt{\bar{\alpha}_t}\,x_0 + \sqrt{1-\bar{\alpha}_t}\,\epsilon$</strong> makes training embarrassingly parallel across timesteps. You never iterate the forward chain.</li>
+    <li><strong>The training loss is just MSE on noise predictions.</strong> No adversarial training, no mode collapse, no careful balancing. This is why diffusion models are so stable.</li>
+    <li><strong>Training and sampling are decoupled.</strong> You can train with DDPM's objective and sample with DDIM, DPM-Solver, or any other method — no retraining needed.</li>
+    <li><strong>Latent diffusion is the efficiency insight.</strong> Compress images to a 48× smaller latent space first, then run diffusion there. This is what makes Stable Diffusion practical.</li>
+    <li><strong>Classifier-free guidance is the quality knob.</strong> Higher $w$ means more faithful to the prompt but less diverse. Typical values: 3–15.</li>
+  </ol>
+
+  <h3>Exercises</h3>
+
+  <div class="aside check">
+    <div class="label">Conceptual</div>
+    <p><strong>1.</strong> Why does the forward process preserve variance? Verify algebraically that if $\text{Var}(x_{t-1}) = 1$, then $\text{Var}(x_t) = 1$ under the DDPM forward step.</p>
+    <p><strong>2.</strong> Derive the relationship between $\hat{\epsilon}$ and $\hat{x}_0$: given $x_t = \sqrt{\bar{\alpha}_t}\,x_0 + \sqrt{1-\bar{\alpha}_t}\,\epsilon$, show that predicting $\epsilon$ is equivalent to predicting $x_0$.</p>
+    <p><strong>3.</strong> Why does CFG require <em>two</em> forward passes per sampling step? Could you reduce this to one? (Hint: look up "CFG distillation.")</p>
+  </div>
+
+  <div class="aside check">
+    <div class="label">Hands-on</div>
+    <p><strong>4.</strong> Open the companion notebook on Colab. Train the MNIST diffusion model for 15 epochs, then sample with DDIM at step counts [10, 20, 50, 100, 500, 1000]. Plot sample quality vs step count. Where is the diminishing-returns threshold?</p>
+    <p><strong>5.</strong> Modify the noise schedule from linear to cosine. Does the loss curve change? Do the generated samples look different? Why or why not?</p>
+    <p><strong>6.</strong> In the 2D playground above, set "show scores" on and watch the vector field at $t=500$. The arrows point toward the nearest cluster center. Now imagine the data distribution were a single Gaussian — what would the score field look like? Sketch it on paper.</p>
+  </div>
+
+  <h3>Further reading, in order</h3>
+
+  <ul class="fancy">
+    <li>Sohl-Dickstein et al. (2015) — <em>Deep Unsupervised Learning using Nonequilibrium Thermodynamics</em>. The original diffusion idea.</li>
+    <li>Ho, Jain, Abbeel (2020) — <em>Denoising Diffusion Probabilistic Models</em>. The paper that made it work. Read this one.</li>
+    <li>Song et al. (2020) — <em>DDIM</em>. Faster, deterministic sampling.</li>
+    <li>Song &amp; Ermon (2019/2021) — <em>Score-Based Generative Modeling / Score SDE</em>. The continuous-time perspective.</li>
+    <li>Nichol &amp; Dhariwal (2021) — <em>Improved DDPM</em>. Cosine schedule and learned variance.</li>
+    <li>Dhariwal &amp; Nichol (2021) — <em>Diffusion Models Beat GANs</em>. The quality breakthrough.</li>
+    <li>Ho &amp; Salimans (2022) — <em>Classifier-Free Diffusion Guidance</em>. The quality knob.</li>
+    <li>Rombach et al. (2022) — <em>Latent Diffusion Models</em>. Stable Diffusion.</li>
+    <li>Peebles &amp; Xie (2023) — <em>DiT</em>. Transformers replace U-Nets.</li>
+    <li>Lipman et al. (2023) — <em>Flow Matching</em>. The generalization beyond diffusion.</li>
+    <li>Song et al. (2023) — <em>Consistency Models</em>. One-step generation.</li>
+    <li>P. Kulkarni — <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/04-diffusion-models/notebook.ipynb"><em>Module 04 notebook</em></a>. MNIST diffusion from scratch in PyTorch.</li>
+  </ul>
+</section>
+
+<footer>
+  <h3 style="font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:18px;color:#1a1814;margin-bottom:14px">References &amp; acknowledgments</h3>
+
+  <p style="margin-bottom:14px">All figures in this tutorial are original SVG illustrations. The conceptual structure draws on the foundational papers cited above and the Hugging Face blog post on diffusion models by Rogge &amp; Rasul. Empirical findings in §11 summarize experiments from the companion notebook.</p>
+
+  <hr style="border:none;border-top:1px solid var(--rule);margin:24px 0">
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#3d3830">
+    <div>
+      <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7165;margin-bottom:6px">Author</div>
+      <div>Prashant Kulkarni<br><span style="color:#7a7165">with help from Claude Opus (Anthropic)</span></div>
+    </div>
+    <div>
+      <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7165;margin-bottom:6px">License</div>
+      <div>
+        <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC&nbsp;BY-NC&nbsp;4.0</a><br>
+        <span style="color:#7a7165">Free to share &amp; adapt for non-commercial use, with attribution.</span>
+      </div>
+    </div>
+  </div>
+
+  <p style="margin-top:18px;font-size:11px;color:#7a7165;font-family:'JetBrains Mono',monospace">
+    Part of the <em style="font-family:'Fraunces',serif;font-size:13px">learn-generative-ai</em> tutorial series · Chapter 04 of 10 · v1.0
+  </p>
+</footer>
+
+</main>
+</div>
+
+<!-- ====== 2D Diffusion Demo Script ====== -->
+<script>
+"use strict";
+// Gaussian mixture data distribution
+const CENTERS = [
+  { x: 150, y: 120, color: '#3a5a72' },
+  { x: 450, y: 120, color: '#b03d1a' },
+  { x: 300, y: 300, color: '#b88528' },
+  { x: 120, y: 300, color: '#506348' },
+  { x: 480, y: 280, color: '#8a3a5e' },
+];
+const SIGMA = 22;
+const N_PARTICLES = 300;
+const T_MAX = 1000;
+
+let particles = [];
+let animId = null;
+let animDir = 0; // 0=stopped, -1=reverse, 1=forward
+let currentT = T_MAX;
+
+function alphaBar(t) {
+  // Cosine schedule
+  const s = 0.008;
+  const f = (tt) => Math.cos((tt / T_MAX + s) / (1 + s) * Math.PI / 2) ** 2;
+  return f(t) / f(0);
+}
+
+function initParticles() {
+  particles = [];
+  for (let i = 0; i < N_PARTICLES; i++) {
+    const c = CENTERS[i % CENTERS.length];
+    const x0 = c.x + randn() * SIGMA;
+    const y0 = c.y + randn() * SIGMA;
+    particles.push({ x0, y0, color: c.color, cx: c.x, cy: c.y });
+  }
+}
+
+function randn() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function noisedPosition(p, t) {
+  const ab = alphaBar(t);
+  const sqrtAb = Math.sqrt(ab);
+  const sqrtOneMinusAb = Math.sqrt(1 - ab);
+  // Fixed noise per particle (seeded by index)
+  const seed1 = Math.sin(p.x0 * 12.9898 + p.y0 * 78.233) * 43758.5453;
+  const seed2 = Math.sin(p.x0 * 93.9898 + p.y0 * 67.345) * 24634.6345;
+  const n1 = ((seed1 - Math.floor(seed1)) - 0.5) * 3.46;
+  const n2 = ((seed2 - Math.floor(seed2)) - 0.5) * 3.46;
+  return {
+    x: sqrtAb * p.x0 + sqrtOneMinusAb * n1 * 100,
+    y: sqrtAb * p.y0 + sqrtOneMinusAb * n2 * 100,
+  };
+}
+
+function computeScore(x, y, t) {
+  const ab = alphaBar(t);
+  if (ab < 0.001) return { sx: 0, sy: 0 };
+  const varT = 1 - ab + 0.01;
+  const sqrtAb = Math.sqrt(ab);
+  let totalW = 0, sx = 0, sy = 0;
+  for (const c of CENTERS) {
+    const dx = x - sqrtAb * c.x;
+    const dy = y - sqrtAb * c.y;
+    const logW = -0.5 * (dx * dx + dy * dy) / (varT * SIGMA * SIGMA / 10 + varT * 500);
+    const w = Math.exp(logW);
+    totalW += w;
+    sx += w * (-dx / (varT * 60));
+    sy += w * (-dy / (varT * 60));
+  }
+  if (totalW > 0) { sx /= totalW; sy /= totalW; }
+  return { sx, sy };
+}
+
+function draw() {
+  const canvas = document.getElementById('d-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw cluster centers (faded)
+  const ab = alphaBar(currentT);
+  for (const c of CENTERS) {
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, SIGMA * 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = c.color + '15';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = c.color + '40';
+    ctx.fill();
+  }
+
+  // Draw particles
+  const showArrows = document.getElementById('d-arrows')?.checked;
+  for (const p of particles) {
+    const pos = noisedPosition(p, currentT);
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = ab > 0.3 ? p.color : '#7a7165';
+    ctx.globalAlpha = 0.75;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    if (showArrows && currentT > 10) {
+      const s = computeScore(pos.x, pos.y, currentT);
+      const mag = Math.sqrt(s.sx * s.sx + s.sy * s.sy);
+      if (mag > 0.01) {
+        const len = Math.min(mag * 400, 20);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+        ctx.lineTo(pos.x + s.sx / mag * len, pos.y + s.sy / mag * len);
+        ctx.strokeStyle = p.color + '60';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Status
+  const status = document.getElementById('d-status');
+  if (status) {
+    if (currentT >= 990) status.textContent = `t = ${currentT} · pure noise · drag the slider or press play`;
+    else if (currentT <= 10) status.textContent = `t = ${currentT} · clean data · five Gaussian clusters recovered`;
+    else status.textContent = `t = ${currentT} · ᾱ_t = ${ab.toFixed(3)} · signal = ${(ab * 100).toFixed(0)}%`;
+  }
+}
+
+function animate() {
+  if (animDir === -1) { currentT = Math.max(0, currentT - 5); }
+  else if (animDir === 1) { currentT = Math.min(T_MAX, currentT + 5); }
+  document.getElementById('d-slider').value = currentT;
+  document.getElementById('d-t-val').textContent = currentT;
+  draw();
+  if ((animDir === -1 && currentT <= 0) || (animDir === 1 && currentT >= T_MAX)) {
+    animDir = 0;
+    return;
+  }
+  if (animDir !== 0) animId = requestAnimationFrame(animate);
+}
+
+// Wire up controls
+document.addEventListener('DOMContentLoaded', () => {
+  initParticles();
+  draw();
+
+  document.getElementById('d-slider').addEventListener('input', (e) => {
+    animDir = 0; if (animId) cancelAnimationFrame(animId);
+    currentT = +e.target.value;
+    document.getElementById('d-t-val').textContent = currentT;
+    draw();
+  });
+
+  document.getElementById('d-play').addEventListener('click', () => {
+    if (currentT <= 0) { currentT = T_MAX; }
+    animDir = -1;
+    animate();
+  });
+
+  document.getElementById('d-forward').addEventListener('click', () => {
+    if (currentT >= T_MAX) { currentT = 0; }
+    animDir = 1;
+    animate();
+  });
+
+  document.getElementById('d-reset').addEventListener('click', () => {
+    animDir = 0; if (animId) cancelAnimationFrame(animId);
+    currentT = T_MAX;
+    document.getElementById('d-slider').value = T_MAX;
+    document.getElementById('d-t-val').textContent = T_MAX;
+    initParticles();
+    draw();
+  });
+
+  document.getElementById('d-arrows').addEventListener('change', draw);
+});
+
+// Active TOC highlighting
+const sections = document.querySelectorAll('section[id]');
+const tocLinks = document.querySelectorAll('.toc a');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      tocLinks.forEach(l => l.style.color = '');
+      const active = document.querySelector(`.toc a[href="#${e.target.id}"]`);
+      if (active) active.style.color = 'var(--indigo)';
+    }
+  });
+}, { rootMargin: '-30% 0px -60% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

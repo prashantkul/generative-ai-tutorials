@@ -17,7 +17,6 @@
   --ink:#1a1814;--ink-2:#3d3830;--ink-3:#7a7165;--rule:#d9cfba;
   --accent:#8a3a5e;--accent-soft:#c88da8;
   --rust:#b03d1a;--sage:#506348;--gold:#b88528;--indigo:#3a5a72;
-  --highlight:#fde8b4;
   --shadow:0 1px 0 rgba(26,24,20,.04),0 8px 30px -10px rgba(26,24,20,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -27,40 +26,35 @@ body{background:var(--paper);color:var(--ink);font-family:'Newsreader',Georgia,s
 @media(max-width:980px){.shell{grid-template-columns:1fr;gap:0;padding:0 22px}.toc{display:none}}
 .toc{position:sticky;top:32px;align-self:start;padding:80px 0 0;font-family:'Fraunces',serif;font-size:13px;letter-spacing:.02em;height:calc(100vh - 32px);overflow-y:auto}
 .toc h4{font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:13px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.18em;margin-bottom:14px}
-.toc ol{list-style:none;counter-reset:toc}
-.toc li{counter-increment:toc;margin:6px 0;padding-left:28px;position:relative}
+.toc ol{list-style:none;counter-reset:toc}.toc li{counter-increment:toc;margin:6px 0;padding-left:28px;position:relative}
 .toc li::before{content:counter(toc,decimal-leading-zero);position:absolute;left:0;top:1px;font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace}
 .toc a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid transparent;transition:border .2s,color .2s}
 .toc a:hover{color:var(--accent);border-bottom-color:var(--accent)}
 main{max-width:740px;padding:60px 0 120px}
-.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:24px;display:flex;align-items:center;gap:14px}
-.eyebrow::after{content:"";flex:1;height:1px;background:var(--rule)}
-h1.title{font-family:'Fraunces',serif;font-weight:300;font-size:clamp(48px,7vw,84px);line-height:.95;letter-spacing:-.02em;margin-bottom:18px;font-variation-settings:"opsz" 144,"SOFT" 50}
-h1.title em{font-style:italic;font-weight:400;color:var(--accent);font-variation-settings:"opsz" 144,"SOFT" 100}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:24px;display:flex;align-items:center;gap:14px}.eyebrow::after{content:"";flex:1;height:1px;background:var(--rule)}
+h1.title{font-family:'Fraunces',serif;font-weight:300;font-size:clamp(48px,7vw,84px);line-height:.95;letter-spacing:-.02em;margin-bottom:18px}
+h1.title em{font-style:italic;font-weight:400;color:var(--accent)}
 .subtitle{font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:24px;color:var(--ink-2);line-height:1.4;max-width:560px;margin-bottom:36px}
 .byline{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);padding-top:24px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:80px}
 .byline a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
 section{margin:80px 0;scroll-margin-top:24px}
-.chapter-mark{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px;display:flex;align-items:center;gap:14px}
+.chapter-mark{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
 .chapter-mark .num{display:inline-flex;width:32px;height:32px;background:var(--ink);color:var(--paper);border-radius:50%;align-items:center;justify-content:center;font-size:13px;font-weight:600}
-h2{font-family:'Fraunces',serif;font-weight:400;font-size:42px;line-height:1.1;letter-spacing:-.015em;margin:14px 0 28px;font-variation-settings:"opsz" 72,"SOFT" 30}
+h2{font-family:'Fraunces',serif;font-weight:400;font-size:42px;line-height:1.1;letter-spacing:-.015em;margin:14px 0 28px}
 h2 em{font-style:italic;color:var(--accent);font-weight:300}
-h3{font-family:'Fraunces',serif;font-weight:500;font-style:italic;font-size:24px;margin:40px 0 14px;color:var(--ink)}
+h3{font-family:'Fraunces',serif;font-weight:500;font-style:italic;font-size:24px;margin:40px 0 14px}
 p{margin:0 0 18px;hyphens:auto}
 .lede{font-size:22px;line-height:1.55;color:var(--ink-2);font-family:'Fraunces',serif;font-weight:300}
 .lede:first-letter{font-family:'Fraunces',serif;font-weight:600;font-size:78px;float:left;line-height:.85;margin:6px 10px 0 -2px;color:var(--accent)}
 strong{font-weight:600;color:var(--ink)}
-.term{font-family:'Fraunces',serif;font-style:italic;font-weight:500;color:var(--accent);border-bottom:1px dotted var(--accent-soft);padding-bottom:1px}
+.term{font-family:'Fraunces',serif;font-style:italic;font-weight:500;color:var(--accent);border-bottom:1px dotted var(--accent-soft)}
 code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--paper-2);padding:1px 6px;border-radius:3px}
 .pullquote{border-left:3px solid var(--accent);padding:8px 0 8px 24px;margin:32px 0;font-family:'Fraunces',serif;font-style:italic;font-weight:300;font-size:24px;line-height:1.4;color:var(--ink-2)}
 .aside{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:24px 28px;margin:32px 0;box-shadow:var(--shadow)}
 .aside .label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.2em;margin-bottom:8px}
-.aside.insight{background:linear-gradient(180deg,#f8e8f0,#fbf6ec);border-color:var(--accent)}
-.aside.insight .label{color:var(--accent)}
-.aside.warn{background:#fdebe2;border-color:var(--rust)}
-.aside.warn .label{color:var(--rust)}
-.aside.check{background:#eef0e8;border-color:#bcc4ad}
-.aside.check .label{color:var(--sage)}
+.aside.insight{background:linear-gradient(180deg,#f8e8f0,#fbf6ec);border-color:var(--accent)}.aside.insight .label{color:var(--accent)}
+.aside.warn{background:#fdebe2;border-color:var(--rust)}.aside.warn .label{color:var(--rust)}
+.aside.check{background:#eef0e8;border-color:#bcc4ad}.aside.check .label{color:var(--sage)}
 .aside p:last-child{margin-bottom:0}
 figure{margin:40px -40px;background:var(--card);border:1px solid var(--rule);border-radius:8px;overflow:hidden;box-shadow:var(--shadow)}
 @media(max-width:980px){figure{margin:32px 0}}
@@ -73,7 +67,6 @@ ul.fancy li,ol.fancy li{position:relative;padding-left:32px;margin-bottom:12px}
 ul.fancy li::before{content:"§";position:absolute;left:0;top:0;color:var(--accent);font-family:'Fraunces',serif;font-style:italic;font-size:1.1em}
 ol.fancy{counter-reset:fancy}ol.fancy li{counter-increment:fancy}
 ol.fancy li::before{content:counter(fancy,decimal-leading-zero);position:absolute;left:0;top:3px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600}
-pre.diagram{font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.5;background:var(--card);padding:18px 22px;border:1px solid var(--rule);border-radius:6px;overflow-x:auto;margin:24px 0;color:var(--ink-2)}
 .compare{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:32px 0}
 @media(max-width:680px){.compare{grid-template-columns:1fr}}
 .compare > div{background:var(--card);padding:22px;border-radius:6px;border-top:3px solid var(--rule)}
@@ -84,32 +77,31 @@ footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(-
 .iframe-wrap iframe{width:100%;height:720px;border:none;display:block}
 .iframe-credit{padding:12px 20px;background:var(--card);border-top:1px solid var(--rule);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)}
 .iframe-credit a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+.home-link{position:fixed;top:18px;left:22px;z-index:100;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--rust,#b03d1a);background:var(--card,#fbf6ec);border:1px solid var(--rule,#d9cfba);border-radius:14px;padding:6px 12px;text-decoration:none;box-shadow:0 2px 10px -4px rgba(26,24,20,.15);transition:background .15s,color .15s,border-color .15s}
+.home-link:hover{background:var(--rust,#b03d1a);color:#fff;border-color:var(--rust,#b03d1a)}
 </style>
 </head>
 <body>
 <a href="index.html" class="home-link" aria-label="Back to landing page">← Home</a>
-<style>
-.home-link{position:fixed;top:18px;left:22px;z-index:100;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--rust,#b03d1a);background:var(--card,#fbf6ec);border:1px solid var(--rule,#d9cfba);border-radius:14px;padding:6px 12px;text-decoration:none;box-shadow:0 2px 10px -4px rgba(26,24,20,.15);transition:background .15s,color .15s,border-color .15s}
-.home-link:hover{background:var(--rust,#b03d1a);color:#fff;border-color:var(--rust,#b03d1a)}
-</style>
 <div class="shell">
 
-<nav class="toc" aria-label="Table of Contents">
-  <h4>Tutorial</h4>
-  <ol>
-    <li><a href="#why">Why attention?</a></li>
-    <li><a href="#sdpa">Scaled dot-product attention</a></li>
-    <li><a href="#mask">The attention matrix &amp; masking</a></li>
-    <li><a href="#mha">Multi-head attention</a></li>
-    <li><a href="#pos">Positional encoding</a></li>
-    <li><a href="#block">The transformer block</a></li>
-    <li><a href="#arch">Encoder vs decoder</a></li>
-    <li><a href="#gpt">The GPT architecture</a></li>
-    <li><a href="#train">Training: next-token prediction</a></li>
-    <li><a href="#fieldnotes">Field notes: sequence reversal</a></li>
-    <li><a href="#playground">Interactive: Transformer Explainer</a></li>
-    <li><a href="#takeaways">Takeaways &amp; exercises</a></li>
-  </ol>
+<nav class="toc"><h4>Tutorial</h4>
+<ol>
+  <li><a href="#why">Why attention?</a></li>
+  <li><a href="#sdpa">Scaled dot-product attention</a></li>
+  <li><a href="#worked">Worked example</a></li>
+  <li><a href="#mask">Causal masking</a></li>
+  <li><a href="#mha">Multi-head attention</a></li>
+  <li><a href="#pos">Positional encoding</a></li>
+  <li><a href="#block">The transformer block</a></li>
+  <li><a href="#mlp">What the MLP does</a></li>
+  <li><a href="#arch">Encoder vs decoder</a></li>
+  <li><a href="#gpt">The GPT architecture</a></li>
+  <li><a href="#train">Training</a></li>
+  <li><a href="#fieldnotes">Field notes</a></li>
+  <li><a href="#playground">Interactive</a></li>
+  <li><a href="#takeaways">Takeaways &amp; exercises</a></li>
+</ol>
 </nav>
 
 <main>
@@ -118,10 +110,7 @@ footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(-
   <div class="eyebrow">A First-Principles Tutorial · Chapter 02</div>
   <h1 class="title">Trans<em>formers</em></h1>
   <p class="subtitle">Attention is all you need — how letting every token talk to every other token changed everything.</p>
-  <div class="byline">
-    <span>By Prashant Kulkarni · with help from Claude Opus</span>
-    <span><a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a></span>
-  </div>
+  <div class="byline"><span>By Prashant Kulkarni · with help from Claude Opus</span><span><a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a></span></div>
 </header>
 
 <!-- ============ 1. WHY ============ -->
@@ -129,70 +118,63 @@ footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(-
   <div class="chapter-mark"><span class="num">1</span> Motivation</div>
   <h2>Why <em>attention</em>?</h2>
 
-  <p class="lede">Before transformers, recurrent neural networks processed sequences one token at a time, threading a hidden state forward through the chain: $h_t = f(h_{t-1}, x_t)$. This design created three problems that attention solves simultaneously.</p>
+  <p class="lede">Before transformers, recurrent neural networks processed sequences one token at a time, threading a hidden state forward through the chain: $h_t = f(h_{t-1}, x_t)$. Consider what this means concretely. To compute the representation of token 500, the network must first compute the representations of tokens 1 through 499 — sequentially, one after another. This creates three problems.</p>
 
-  <ul class="fancy">
-    <li><strong>Sequential computation prevents parallelism.</strong> You cannot compute $h_{100}$ without first computing $h_1$ through $h_{99}$. On GPUs with thousands of parallel cores, this serialization is catastrophic.</li>
-    <li><strong>Vanishing gradients over long chains.</strong> Backpropagation through $T$ timesteps involves a product of $T$ Jacobians. When each has spectral norm slightly less than 1, the product vanishes exponentially.</li>
-    <li><strong>Information bottleneck.</strong> The entire history of the sequence must be compressed into one fixed-dimensional vector $h_t$. By token 500, information about token 1 has been repeatedly overwritten.</li>
-  </ul>
+  <h3>Problem 1: No parallelism</h3>
+  <p>A modern GPU has thousands of cores that can multiply matrices simultaneously. But an RNN forces sequential computation — $h_2$ depends on $h_1$, $h_3$ depends on $h_2$, and so on. Those thousands of cores sit idle, waiting. Training a 500-token sequence takes 500 sequential steps regardless of how many GPUs you have. This is why RNN training was painfully slow at scale, and why scaling to billions of parameters was impractical.</p>
 
-  <p>The key insight: <strong>let every token look at every other token directly</strong>, without routing information through a chain of intermediate states. Computation becomes parallel. Gradient paths become short (one step, not $T$). There is no bottleneck. The cost is quadratic — $O(n^2)$ for a sequence of length $n$ — but this is a price modern hardware pays gladly.</p>
+  <h3>Problem 2: Vanishing gradients over distance</h3>
+  <p>Backpropagation through $T$ timesteps involves a product of $T$ Jacobian matrices (recall Chapter 01 §6). When each Jacobian has spectral norm slightly less than 1, the product shrinks exponentially. After 100 steps, the gradient from token 100 that reaches token 1 is essentially zero. The network cannot learn long-range dependencies — it forgets the beginning of the sentence by the time it reaches the end. LSTMs and GRUs mitigated this with gating mechanisms, but they couldn't fully solve it for very long sequences.</p>
+
+  <h3>Problem 3: Information bottleneck</h3>
+  <p>The hidden state $h_t$ has a fixed dimension — say, 512. By token 500, the entire history of the sequence (all 500 tokens, their interactions, their context) must be compressed into 512 numbers. This is an information-theoretic impossibility for complex sequences. Information about early tokens gets progressively overwritten as new tokens arrive. In machine translation, this means the model "forgets" the beginning of a long source sentence by the time it finishes encoding it.</p>
+
+  <h3>The attention solution</h3>
+  <p>The key insight: <strong>let every token look at every other token directly</strong>, without routing information through a chain of intermediate states.</p>
+
+  <p>With attention, token 500 can directly attend to token 1 in a single computation step. There is no chain of hidden states to route through — the connection is direct. This simultaneously solves all three problems: computation becomes fully parallel (every token-to-token interaction can be computed simultaneously), gradient paths are short (one step from any token to any other), and there is no bottleneck (each token can selectively access the full context).</p>
+
+  <p>The cost is quadratic — computing all pairwise interactions between $n$ tokens requires $O(n^2)$ operations. For a sequence of 4,096 tokens, that's about 16 million interactions. But on modern GPUs, this is a single matrix multiply — and matrix multiplies are exactly what GPUs are built for.</p>
 
   <figure>
     <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
-      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">RNN: sequential chain · Attention: every token sees every other token</text>
-      <!-- RNN (left panel) -->
+      <defs><marker id="ar-t" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7a7165"/></marker></defs>
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">RNN: information must traverse a chain · Attention: every token has direct access</text>
+      <!-- RNN panel -->
       <rect x="30" y="40" width="310" height="190" rx="6" fill="#fcf8ee" stroke="#e2d8c2"/>
-      <text x="185" y="58" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165" letter-spacing="0.1em">RNN: SEQUENTIAL</text>
-      <!-- RNN chain: h1 → h2 → h3 → h4 → h5 -->
+      <text x="185" y="58" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165" letter-spacing="0.1em">RNN: SEQUENTIAL CHAIN</text>
       <g font-family="JetBrains Mono,monospace" font-size="10">
-        <rect x="50" y="100" width="42" height="30" rx="4" fill="#b03d1a"/>
-        <text x="71" y="119" text-anchor="middle" fill="#fff" font-weight="600">h₁</text>
+        <rect x="50" y="100" width="42" height="30" rx="4" fill="#b03d1a"/><text x="71" y="119" text-anchor="middle" fill="#fff" font-weight="600">h₁</text>
         <line x1="92" y1="115" x2="108" y2="115" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-t)"/>
-        <rect x="112" y="100" width="42" height="30" rx="4" fill="#b03d1a"/>
-        <text x="133" y="119" text-anchor="middle" fill="#fff" font-weight="600">h₂</text>
+        <rect x="112" y="100" width="42" height="30" rx="4" fill="#b03d1a"/><text x="133" y="119" text-anchor="middle" fill="#fff" font-weight="600">h₂</text>
         <line x1="154" y1="115" x2="170" y2="115" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-t)"/>
-        <rect x="174" y="100" width="42" height="30" rx="4" fill="#b03d1a"/>
-        <text x="195" y="119" text-anchor="middle" fill="#fff" font-weight="600">h₃</text>
+        <rect x="174" y="100" width="42" height="30" rx="4" fill="#b03d1a"/><text x="195" y="119" text-anchor="middle" fill="#fff" font-weight="600">h₃</text>
         <line x1="216" y1="115" x2="232" y2="115" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-t)"/>
-        <rect x="236" y="100" width="42" height="30" rx="4" fill="#b03d1a"/>
-        <text x="257" y="119" text-anchor="middle" fill="#fff" font-weight="600">h₄</text>
+        <rect x="236" y="100" width="42" height="30" rx="4" fill="#b03d1a"/><text x="257" y="119" text-anchor="middle" fill="#fff" font-weight="600">h₄</text>
         <line x1="278" y1="115" x2="288" y2="115" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-t)"/>
-        <rect x="292" y="100" width="34" height="30" rx="4" fill="#b03d1a" opacity="0.5"/>
-        <text x="309" y="119" text-anchor="middle" fill="#fff">···</text>
+        <rect x="292" y="100" width="34" height="30" rx="4" fill="#b03d1a" opacity="0.5"/><text x="309" y="119" text-anchor="middle" fill="#fff">···</text>
       </g>
-      <text x="185" y="160" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">info from t₁ must pass through every h</text>
-      <text x="185" y="178" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#b03d1a">path length: O(n) · not parallelizable</text>
-
-      <!-- Attention (right panel) -->
+      <text x="185" y="156" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">for t₁ to reach t₅₀₀: traverse 499 states</text>
+      <text x="185" y="172" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#b03d1a">path: O(n) · gradient vanishes · not parallel</text>
+      <!-- Attention panel -->
       <rect x="380" y="40" width="310" height="190" rx="6" fill="#fcf8ee" stroke="#e2d8c2"/>
       <text x="535" y="58" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a7165" letter-spacing="0.1em">ATTENTION: DIRECT ACCESS</text>
-      <!-- Tokens in a row, all connected to all -->
       <g font-family="JetBrains Mono,monospace" font-size="10">
-        <rect x="410" y="100" width="42" height="30" rx="4" fill="#8a3a5e"/>
-        <text x="431" y="119" text-anchor="middle" fill="#fff" font-weight="600">t₁</text>
-        <rect x="472" y="100" width="42" height="30" rx="4" fill="#8a3a5e"/>
-        <text x="493" y="119" text-anchor="middle" fill="#fff" font-weight="600">t₂</text>
-        <rect x="534" y="100" width="42" height="30" rx="4" fill="#8a3a5e"/>
-        <text x="555" y="119" text-anchor="middle" fill="#fff" font-weight="600">t₃</text>
-        <rect x="596" y="100" width="42" height="30" rx="4" fill="#8a3a5e"/>
-        <text x="617" y="119" text-anchor="middle" fill="#fff" font-weight="600">t₄</text>
+        <rect x="410" y="100" width="42" height="30" rx="4" fill="#8a3a5e"/><text x="431" y="119" text-anchor="middle" fill="#fff" font-weight="600">t₁</text>
+        <rect x="472" y="100" width="42" height="30" rx="4" fill="#8a3a5e"/><text x="493" y="119" text-anchor="middle" fill="#fff" font-weight="600">t₂</text>
+        <rect x="534" y="100" width="42" height="30" rx="4" fill="#8a3a5e"/><text x="555" y="119" text-anchor="middle" fill="#fff" font-weight="600">t₃</text>
+        <rect x="596" y="100" width="42" height="30" rx="4" fill="#8a3a5e"/><text x="617" y="119" text-anchor="middle" fill="#fff" font-weight="600">t₄</text>
       </g>
-      <!-- Connections (orthogonal: horizontal above, vertical down) -->
-      <!-- t1-t2 -->
+      <!-- Connection lines (orthogonal) -->
       <line x1="431" y1="100" x2="431" y2="80" stroke="#8a3a5e" stroke-width="0.8" opacity="0.4"/>
       <line x1="431" y1="80" x2="493" y2="80" stroke="#8a3a5e" stroke-width="0.8" opacity="0.4"/>
       <line x1="493" y1="80" x2="493" y2="100" stroke="#8a3a5e" stroke-width="0.8" opacity="0.4"/>
-      <!-- t1-t3 -->
       <line x1="431" y1="100" x2="431" y2="74" stroke="#8a3a5e" stroke-width="0.8" opacity="0.4"/>
       <line x1="431" y1="74" x2="555" y2="74" stroke="#8a3a5e" stroke-width="0.8" opacity="0.4"/>
       <line x1="555" y1="74" x2="555" y2="100" stroke="#8a3a5e" stroke-width="0.8" opacity="0.4"/>
-      <!-- t1-t4 -->
       <line x1="431" y1="100" x2="431" y2="68" stroke="#8a3a5e" stroke-width="0.8" opacity="0.4"/>
       <line x1="431" y1="68" x2="617" y2="68" stroke="#8a3a5e" stroke-width="0.8" opacity="0.4"/>
       <line x1="617" y1="68" x2="617" y2="100" stroke="#8a3a5e" stroke-width="0.8" opacity="0.4"/>
-      <!-- t2-t3, t2-t4, t3-t4 below -->
       <line x1="493" y1="130" x2="493" y2="144" stroke="#8a3a5e" stroke-width="0.8" opacity="0.4"/>
       <line x1="493" y1="144" x2="555" y2="144" stroke="#8a3a5e" stroke-width="0.8" opacity="0.4"/>
       <line x1="555" y1="144" x2="555" y2="130" stroke="#8a3a5e" stroke-width="0.8" opacity="0.4"/>
@@ -202,14 +184,11 @@ footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(-
       <line x1="555" y1="130" x2="555" y2="156" stroke="#8a3a5e" stroke-width="0.8" opacity="0.4"/>
       <line x1="555" y1="156" x2="617" y2="156" stroke="#8a3a5e" stroke-width="0.8" opacity="0.4"/>
       <line x1="617" y1="156" x2="617" y2="130" stroke="#8a3a5e" stroke-width="0.8" opacity="0.4"/>
-
-      <text x="535" y="180" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">every token sees every other directly</text>
-      <text x="535" y="198" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#8a3a5e">path length: O(1) · fully parallel</text>
-
-      <defs><marker id="ar-t" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7a7165"/></marker></defs>
+      <text x="535" y="178" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">every pair: one-step connection</text>
+      <text x="535" y="194" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#8a3a5e">path: O(1) · strong gradients · fully parallel</text>
     </svg>
     <figcaption>
-      In an RNN, information from token 1 must traverse every intermediate hidden state to reach token $n$ — a sequential chain of length $O(n)$. In attention, every token has <em>direct access</em> to every other token in one step — path length $O(1)$, fully parallelizable across all pairs.
+      The fundamental architectural difference. In an RNN, information from token 1 must traverse every intermediate hidden state to reach token $n$ — a serial chain with $O(n)$ path length. In attention, every token-pair interaction is computed in a single parallel step — $O(1)$ path length. This enables both faster training and better long-range learning.
       <span class="src">Original SVG</span>
     </figcaption>
   </figure>
@@ -220,116 +199,76 @@ footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(-
   <div class="chapter-mark"><span class="num">2</span> Core mechanism</div>
   <h2>Scaled <em>dot-product</em> attention</h2>
 
-  <p>Attention is fundamentally a <span class="term">soft dictionary lookup</span>. We have three ingredients:</p>
+  <p>Think of attention as a <span class="term">soft dictionary lookup</span>. You have a question (query) and a collection of entries (keys), each associated with a piece of information (value). The attention mechanism scores how well each key matches the query, then returns a weighted average of the values — with weights proportional to the match quality.</p>
+
+  <p>Concretely, each token in the sequence produces three vectors by linear projection:</p>
 
   <ul class="fancy">
-    <li><strong>Query (Q)</strong> — "what am I looking for?" Each token produces a query vector that encodes what information it needs from other tokens.</li>
-    <li><strong>Key (K)</strong> — "what do I contain?" Each token produces a key vector that advertises what information it offers.</li>
-    <li><strong>Value (V)</strong> — "what information do I provide?" Each token produces a value vector — the actual content to be gathered.</li>
+    <li><strong>Query ($q$)</strong> — "what am I looking for?" This encodes what information the current token needs from other tokens. When the word "it" appears in a sentence, its query encodes the question "what noun do I refer to?"</li>
+    <li><strong>Key ($k$)</strong> — "what do I contain?" This advertises what information the token offers. The word "cat" produces a key that encodes "I am an animal, a noun, a potential antecedent for pronouns."</li>
+    <li><strong>Value ($v$)</strong> — "what information do I provide if selected?" This is the actual content that gets aggregated. While the key advertises, the value delivers.</li>
   </ul>
 
-  <p>These are computed by projecting the input through learned weight matrices:</p>
+  <p>The projections are simple linear transformations: $Q = XW_Q$, $K = XW_K$, $V = XW_V$, where $X \in \mathbb{R}^{n \times d}$ is the input (a stack of $n$ token embeddings) and the $W$ matrices are learned parameters.</p>
 
-  <div class="math-display">$$Q = XW_Q, \qquad K = XW_K, \qquad V = XW_V$$</div>
+  <p>The attention computation proceeds in four steps:</p>
 
-  <p>The attention computation itself:</p>
+  <ol class="fancy">
+    <li><strong>Compute scores:</strong> $S = QK^T \in \mathbb{R}^{n \times n}$. Each entry $S_{ij}$ is the dot product $q_i \cdot k_j$ — how similar token $i$'s query is to token $j$'s key. Recall from Chapter 01 §3 that the dot product measures similarity: parallel vectors give large values, orthogonal vectors give zero.</li>
+    <li><strong>Scale:</strong> $S \leftarrow S / \sqrt{d_k}$. This prevents large values from pushing softmax into flat regions where gradients vanish. Without scaling, the variance of the dot products grows with $d_k$, which means softmax sees increasingly extreme inputs as the model dimension grows. Dividing by $\sqrt{d_k}$ keeps the variance near 1 regardless of dimension.</li>
+    <li><strong>Normalize:</strong> $A = \text{softmax}(S)$, applied row-wise. Each row of $A$ is now a probability distribution over the sequence — it sums to 1 and tells you how much token $i$ "attends to" each other token. High values mean "pay attention here"; near-zero values mean "ignore this."</li>
+    <li><strong>Aggregate:</strong> $\text{output} = AV$. Each output token is a weighted average of all value vectors, with weights given by the attention distribution. Token $i$'s output is $\sum_j A_{ij} v_j$ — a mixture of information gathered from across the sequence, with the mixture weights learned end-to-end.</li>
+  </ol>
 
-  <div class="math-display">$$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^T}{\sqrt{d_k}}\right) V$$</div>
-
-  <figure>
-    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
-      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">From input X to attention output — four steps, all matrix multiplies</text>
-      <!-- Input X -->
-      <rect x="30" y="100" width="80" height="50" rx="4" fill="#fff" stroke="#7a7165"/>
-      <text x="70" y="122" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#3d3830" font-weight="600">X</text>
-      <text x="70" y="138" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">(n × d)</text>
-
-      <!-- Arrows to Q, K, V -->
-      <line x1="110" y1="110" x2="150" y2="110" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-t)"/>
-      <line x1="110" y1="125" x2="150" y2="125" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-t)"/>
-      <line x1="110" y1="140" x2="150" y2="140" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-t)"/>
-
-      <!-- Q, K, V boxes -->
-      <rect x="154" y="88" width="70" height="30" rx="4" fill="#8a3a5e"/>
-      <text x="189" y="107" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">Q = XW_Q</text>
-
-      <rect x="154" y="123" width="70" height="30" rx="4" fill="#3a5a72"/>
-      <text x="189" y="142" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">K = XW_K</text>
-
-      <rect x="154" y="158" width="70" height="30" rx="4" fill="#506348"/>
-      <text x="189" y="177" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">V = XW_V</text>
-
-      <!-- Q and K go to matmul -->
-      <line x1="224" y1="103" x2="280" y2="103" stroke="#8a3a5e" stroke-width="1.5"/>
-      <line x1="280" y1="103" x2="280" y2="115" stroke="#8a3a5e" stroke-width="1.5"/>
-
-      <line x1="224" y1="138" x2="280" y2="138" stroke="#3a5a72" stroke-width="1.5"/>
-      <line x1="280" y1="138" x2="280" y2="128" stroke="#3a5a72" stroke-width="1.5"/>
-
-      <!-- QK^T box -->
-      <rect x="260" y="115" width="80" height="30" rx="4" fill="#fff" stroke="#8a3a5e" stroke-width="1.5"/>
-      <text x="300" y="134" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#8a3a5e" font-weight="600">QKᵀ / √d_k</text>
-
-      <!-- Arrow to softmax -->
-      <line x1="340" y1="130" x2="380" y2="130" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-t)"/>
-
-      <!-- Softmax -->
-      <rect x="384" y="115" width="76" height="30" rx="4" fill="#b88528"/>
-      <text x="422" y="134" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">softmax</text>
-
-      <!-- Attention weights -->
-      <line x1="460" y1="130" x2="500" y2="130" stroke="#7a7165" stroke-width="1.5"/>
-      <line x1="500" y1="130" x2="500" y2="118" stroke="#7a7165" stroke-width="1.5"/>
-
-      <!-- V goes to matmul with weights -->
-      <line x1="224" y1="173" x2="500" y2="173" stroke="#506348" stroke-width="1.5"/>
-      <line x1="500" y1="173" x2="500" y2="140" stroke="#506348" stroke-width="1.5"/>
-
-      <!-- Final matmul -->
-      <rect x="480" y="118" width="70" height="30" rx="4" fill="#fff" stroke="#7a7165" stroke-width="1.5"/>
-      <text x="515" y="137" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#3d3830" font-weight="600">Attn · V</text>
-
-      <!-- Output -->
-      <line x1="550" y1="133" x2="590" y2="133" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-t)"/>
-      <rect x="594" y="110" width="90" height="46" rx="4" fill="#8a3a5e"/>
-      <text x="639" y="130" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">output</text>
-      <text x="639" y="146" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" opacity="0.8">(n × d_v)</text>
-
-      <!-- Labels -->
-      <text x="300" y="80" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">scores (n × n)</text>
-      <text x="422" y="100" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">weights (n × n)</text>
-
-      <!-- Summary -->
-      <rect x="60" y="220" width="600" height="34" rx="4" fill="#f8e8f0" stroke="#8a3a5e"/>
-      <text x="360" y="242" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="12" fill="#3d3830">Each step is a matrix multiply. The entire mechanism is differentiable and parallelizable.</text>
-    </svg>
-    <figcaption>
-      The flow from input to attention output. X is projected into Q, K, V. The dot product $QK^T$ produces pairwise scores. Scaling by $\sqrt{d_k}$ keeps softmax in a well-behaved regime. Softmax converts scores to weights. The weighted sum of V is the output.
-      <span class="src">Original SVG · concept after Vaswani et al. (2017)</span>
-    </figcaption>
-  </figure>
+  <div class="math-display">$$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$</div>
 
   <div class="aside insight">
-    <div class="label">Why divide by √d_k?</div>
-    <p>When $d_k$ is large, the dot products in $QK^T$ grow large in magnitude (variance scales with $d_k$). Large values push softmax into regions where gradients are nearly zero — the "saturation" problem from §1 of Foundations. Dividing by $\sqrt{d_k}$ rescales the variance back to approximately 1, keeping the softmax well-conditioned. This is the same variance-preserving trick that appears in weight initialization and diffusion noise schedules.</p>
+    <div class="label">Why the dot product is the right similarity measure</div>
+    <p>You might ask: why not cosine similarity, or Euclidean distance, or a learned comparison function? The dot product is the natural choice because it is <em>the operation that linear layers already compute</em>. Every linear layer $y = Wx$ computes one dot product per output dimension. Attention simply makes this operation <em>between tokens</em> rather than between a token and a weight vector. It requires no new operations — just matrix multiplication, which GPUs can execute at trillions of operations per second.</p>
   </div>
 </section>
 
-<!-- ============ 3. MASK ============ -->
+<!-- ============ 3. WORKED EXAMPLE ============ -->
+<section id="worked">
+  <div class="chapter-mark"><span class="num">3</span> Worked example</div>
+  <h2>Attention with <em>actual numbers</em></h2>
+
+  <p>Let's trace the full computation for a tiny example. Suppose we have 3 tokens with $d_k = 2$ (absurdly small, but it makes the math visible). After projection, suppose:</p>
+
+  <div class="math-display">$$Q = \begin{bmatrix} 1 & 0 \\ 0 & 1 \\ 1 & 1 \end{bmatrix}, \quad K = \begin{bmatrix} 1 & 0 \\ 0 & 1 \\ 0.5 & 0.5 \end{bmatrix}, \quad V = \begin{bmatrix} 1 & 0 \\ 0 & 1 \\ 0.5 & 0.5 \end{bmatrix}$$</div>
+
+  <p><strong>Step 1: Scores.</strong> $QK^T$ computes all pairwise dot products:</p>
+
+  <div class="math-display">$$QK^T = \begin{bmatrix} 1 \cdot 1 + 0 \cdot 0 & 1 \cdot 0 + 0 \cdot 1 & 1 \cdot 0.5 + 0 \cdot 0.5 \\ 0 \cdot 1 + 1 \cdot 0 & 0 \cdot 0 + 1 \cdot 1 & 0 \cdot 0.5 + 1 \cdot 0.5 \\ 1 \cdot 1 + 1 \cdot 0 & 1 \cdot 0 + 1 \cdot 1 & 1 \cdot 0.5 + 1 \cdot 0.5 \end{bmatrix} = \begin{bmatrix} 1 & 0 & 0.5 \\ 0 & 1 & 0.5 \\ 1 & 1 & 1 \end{bmatrix}$$</div>
+
+  <p>Reading row 1: token 1's query is most similar to token 1's key (score 1.0) and least similar to token 2's key (score 0). Token 1 "wants" information from itself and from token 3.</p>
+
+  <p>Reading row 3: token 3's query is equally similar to all keys (scores 1, 1, 1). Token 3 "wants" information from everyone equally.</p>
+
+  <p><strong>Step 2: Scale.</strong> Divide by $\sqrt{d_k} = \sqrt{2} \approx 1.41$: scores become $[0.71, 0, 0.35; \ 0, 0.71, 0.35; \ 0.71, 0.71, 0.71]$.</p>
+
+  <p><strong>Step 3: Softmax.</strong> Apply softmax to each row. For row 1: $e^{0.71} \approx 2.03$, $e^0 = 1$, $e^{0.35} \approx 1.42$. Sum $= 4.45$. So the attention weights are approximately $[0.46, 0.22, 0.32]$. Token 1 attends 46% to itself, 22% to token 2, and 32% to token 3.</p>
+
+  <p>For row 3, since all scores are equal, softmax produces $[0.33, 0.33, 0.33]$ — uniform attention. Token 3 gathers equally from everyone.</p>
+
+  <p><strong>Step 4: Aggregate.</strong> Multiply attention weights by values: $\text{output}_1 = 0.46 \cdot [1,0] + 0.22 \cdot [0,1] + 0.32 \cdot [0.5, 0.5] = [0.62, 0.38]$. Token 1's output is a weighted blend — mostly its own value, with some information mixed in from the others.</p>
+
+  <p>This is the entire mechanism. Every operation is a matrix multiply or elementwise function. There are no sequential dependencies between tokens — the entire $n \times n$ score matrix is computed in one parallel operation. This is why transformers train so fast on GPUs.</p>
+</section>
+
+<!-- ============ 4. MASKING ============ -->
 <section id="mask">
-  <div class="chapter-mark"><span class="num">3</span> The attention matrix</div>
-  <h2>What it looks like, and <em>causal masking</em></h2>
+  <div class="chapter-mark"><span class="num">4</span> Causal masking</div>
+  <h2>Preventing the model from <em>seeing the future</em></h2>
 
-  <p>The matrix $\text{softmax}(QK^T / \sqrt{d_k})$ is an $n \times n$ attention matrix. Entry $(i, j)$ tells you how much token $i$ attends to token $j$. Each row sums to 1 (it's a probability distribution over which tokens to look at).</p>
+  <p>For language generation, we need a critical constraint: when predicting the next token at position $t$, the model should only see tokens at positions $\leq t$. It cannot look at future tokens — that would be cheating. You can't use the answer to predict the answer.</p>
 
-  <p>For a language model, we need <span class="term">causal masking</span>: token $i$ should only attend to tokens at positions $\leq i$ (no peeking at the future). We do this by setting the upper-triangle entries to $-\infty$ <em>before</em> the softmax, which drives them to zero:</p>
+  <p><span class="term">Causal masking</span> enforces this by setting the upper triangle of the score matrix to $-\infty$ <em>before</em> softmax. Since $e^{-\infty} = 0$, these entries vanish after softmax. The result: each token can only attend to itself and earlier tokens.</p>
 
   <figure>
     <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
-      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Causal mask: each token can only see tokens before it (including itself)</text>
-      <!-- Matrix grid -->
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">Causal mask: each row is a distribution over visible (past) tokens only</text>
       <g transform="translate(160, 50)">
-        <!-- Column labels (keys) -->
         <text x="200" y="-10" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" letter-spacing="0.1em">KEYS (attending to)</text>
         <g font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">
           <text x="40" y="12" text-anchor="middle">The</text>
@@ -338,7 +277,6 @@ footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(-
           <text x="280" y="12" text-anchor="middle">on</text>
           <text x="360" y="12" text-anchor="middle">the</text>
         </g>
-        <!-- Row labels (queries) -->
         <text x="-50" y="100" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165" transform="rotate(-90 -50 100)" letter-spacing="0.1em">QUERIES</text>
         <g font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830">
           <text x="-8" y="52" text-anchor="end">The</text>
@@ -347,15 +285,14 @@ footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(-
           <text x="-8" y="172" text-anchor="end">on</text>
           <text x="-8" y="212" text-anchor="end">the</text>
         </g>
-        <!-- Matrix cells -->
-        <!-- Row 1: The can see [The] -->
+        <!-- Row 1: sees only itself -->
         <rect x="0" y="24" width="80" height="40" fill="#8a3a5e" opacity="0.7"/>
         <text x="40" y="48" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff" font-weight="600">1.0</text>
         <rect x="80" y="24" width="80" height="40" fill="#ebe3d4"/>
         <rect x="160" y="24" width="80" height="40" fill="#ebe3d4"/>
         <rect x="240" y="24" width="80" height="40" fill="#ebe3d4"/>
         <rect x="320" y="24" width="80" height="40" fill="#ebe3d4"/>
-        <!-- Row 2: cat can see [The, cat] -->
+        <!-- Row 2 -->
         <rect x="0" y="64" width="80" height="40" fill="#8a3a5e" opacity="0.3"/>
         <text x="40" y="88" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#fff">.4</text>
         <rect x="80" y="64" width="80" height="40" fill="#8a3a5e" opacity="0.6"/>
@@ -363,7 +300,7 @@ footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(-
         <rect x="160" y="64" width="80" height="40" fill="#ebe3d4"/>
         <rect x="240" y="64" width="80" height="40" fill="#ebe3d4"/>
         <rect x="320" y="64" width="80" height="40" fill="#ebe3d4"/>
-        <!-- Row 3: sat can see [The, cat, sat] -->
+        <!-- Row 3 -->
         <rect x="0" y="104" width="80" height="40" fill="#8a3a5e" opacity="0.15"/>
         <text x="40" y="128" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#3d3830">.1</text>
         <rect x="80" y="104" width="80" height="40" fill="#8a3a5e" opacity="0.5"/>
@@ -384,9 +321,7 @@ footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(-
         <rect x="160" y="184" width="80" height="40" fill="#8a3a5e" opacity="0.3"/>
         <rect x="240" y="184" width="80" height="40" fill="#8a3a5e" opacity="0.2"/>
         <rect x="320" y="184" width="80" height="40" fill="#8a3a5e" opacity="0.3"/>
-        <!-- Masked region label -->
         <text x="280" y="52" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#7a7165">masked (−∞ → 0)</text>
-        <!-- Grid lines -->
         <g stroke="#fff" stroke-width="1">
           <line x1="80" y1="24" x2="80" y2="224"/><line x1="160" y1="24" x2="160" y2="224"/>
           <line x1="240" y1="24" x2="240" y2="224"/><line x1="320" y1="24" x2="320" y2="224"/>
@@ -395,206 +330,265 @@ footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(-
         </g>
         <rect x="0" y="24" width="400" height="200" fill="none" stroke="#7a7165" stroke-width="1"/>
       </g>
-      <text x="360" y="268" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">Darker = higher attention weight · Light cells = masked to zero · Each row sums to 1</text>
+      <text x="360" y="268" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="11" fill="#7a7165">Light cells = masked to zero (future tokens) · Each row sums to 1 · Darker = higher weight</text>
     </svg>
     <figcaption>
-      A causal attention matrix for the sequence "The cat sat on the." Each row is a probability distribution over which earlier tokens the query token attends to. The upper triangle is masked — "sat" can attend to "The" and "cat" but not to "on" or "the." This prevents the model from using future information during autoregressive generation.
+      A causal attention matrix for "The cat sat on the." Row 1 ("The") can only see itself — it has nowhere else to look. Row 2 ("cat") distributes attention between "The" and itself. Row 3 ("sat") can see all three preceding tokens. The lower-triangular structure ensures no information leaks from the future.
       <span class="src">Original SVG · values illustrative</span>
+    </figcaption>
+  </figure>
+
+  <p>A crucial subtlety: the causal mask is applied only once during <em>training</em>, but it enables <em>generation</em>. During training, the model processes all positions in parallel — the mask ensures each position only uses valid context, so every position simultaneously receives the right training signal. During generation, tokens are produced one at a time, and the mask naturally extends as the sequence grows.</p>
+</section>
+
+<!-- ============ 5. MHA ============ -->
+<section id="mha">
+  <div class="chapter-mark"><span class="num">5</span> Multiple views</div>
+  <h2>Multi-head attention — <em>why one head isn't enough</em></h2>
+
+  <p>Consider the sentence: "The cat sat on the mat because <strong>it</strong> was comfortable." The word "it" needs to simultaneously attend to:</p>
+
+  <ul class="fancy">
+    <li>"mat" (because that's what "it" refers to — the mat is comfortable)</li>
+    <li>"sat" (because that's the action that led to the state)</li>
+    <li>"because" (the causal connector that links the two clauses)</li>
+  </ul>
+
+  <p>A single attention distribution is a probability vector — it sums to 1. If it puts high weight on "mat," it must put lower weight on "sat" and "because." But all three relationships are important simultaneously. One distribution cannot capture multiple independent relationships at once.</p>
+
+  <p><span class="term">Multi-head attention</span> solves this by running $h$ independent attention operations in parallel, each with its own learned projections $W_Q^{(i)}, W_K^{(i)}, W_V^{(i)}$:</p>
+
+  <div class="math-display">$$\text{head}_i = \text{Attention}(XW_Q^{(i)}, XW_K^{(i)}, XW_V^{(i)})$$</div>
+
+  <div class="math-display">$$\text{MultiHead}(X) = \text{Concat}(\text{head}_1, \ldots, \text{head}_h)\, W_O$$</div>
+
+  <p>Each head operates in a lower-dimensional subspace: with $d_\text{model} = 768$ and $h = 12$ heads, each head has $d_k = 64$. The total parameter count is $4 d_\text{model}^2$ — identical to a single-head attention with the same total dimension. You get $h$ different attention patterns at no additional parameter cost.</p>
+
+  <p>Empirically, trained heads specialize. Some heads learn <strong>positional patterns</strong> — always attending to the previous token (useful for local syntax). Some learn <strong>syntactic patterns</strong> — attending from a verb to its subject, or from a pronoun to its antecedent. Some learn <strong>semantic patterns</strong> — attending to topically related words. And some are nearly degenerate — doing very little and potentially prunable. This specialization <em>emerges from training</em>; it is not engineered.</p>
+
+  <div class="aside insight">
+    <div class="label">The "induction head" — a remarkable discovery</div>
+    <p>Mechanistic interpretability research (Olsson et al., 2022) identified a specific two-head circuit that appears in virtually all transformers: a "previous-token head" (head A) that copies information about which token preceded a given token, combined with an "induction head" (head B) that uses this to predict what comes after a repeated pattern. If the model has seen "... Harry Potter ..." earlier in the context and now sees "Harry" again, the induction circuit predicts "Potter." This is one of the building blocks of in-context learning.</p>
+  </div>
+</section>
+
+<!-- ============ 6. POSITIONAL ============ -->
+<section id="pos">
+  <div class="chapter-mark"><span class="num">6</span> Position</div>
+  <h2>Positional encoding — <em>because attention is order-blind</em></h2>
+
+  <p>Attention computes pairwise similarities between tokens regardless of their position. The attention score between "cat" and "sat" is the same whether they are adjacent or 500 tokens apart. But position matters enormously: "The dog bit the man" and "The man bit the dog" contain exactly the same tokens.</p>
+
+  <p>Since attention has no built-in notion of order, position must be <strong>injected explicitly</strong>. The original transformer adds positional encodings to the token embeddings: $x_i = \text{embed}(w_i) + \text{PE}(i)$.</p>
+
+  <h3>Sinusoidal encoding (Vaswani et al., 2017)</h3>
+
+  <p>The original approach uses fixed sine and cosine functions at different frequencies:</p>
+
+  <div class="math-display">$$\text{PE}_{(\text{pos}, 2i)} = \sin\!\left(\frac{\text{pos}}{10000^{2i/d}}\right), \qquad \text{PE}_{(\text{pos}, 2i+1)} = \cos\!\left(\frac{\text{pos}}{10000^{2i/d}}\right)$$</div>
+
+  <p>Why sine and cosine? Because any fixed offset in position corresponds to a <strong>linear transformation</strong> of the encoding. Specifically, $\text{PE}(\text{pos} + k)$ can be written as a fixed matrix times $\text{PE}(\text{pos})$. This means the model can learn to compute relative positions using a simple linear operation — it doesn't need to memorize every possible distance.</p>
+
+  <p>Why different frequencies? The low-frequency dimensions (large $i$) change slowly across positions — they encode "coarse" position (roughly where in the sequence). The high-frequency dimensions (small $i$) oscillate rapidly — they encode "fine" position (exactly where). Together, they give a unique fingerprint for each position, analogous to how a clock uses hours, minutes, and seconds at different frequencies to uniquely identify a time.</p>
+
+  <h3>Learned positional embeddings (GPT-2)</h3>
+
+  <p>A trainable lookup table $P \in \mathbb{R}^{n_\text{max} \times d}$, where position $i$ gets embedding $P[i]$. More flexible than sinusoidal — the model can learn arbitrary positional patterns. But it cannot extrapolate beyond $n_\text{max}$, because positions beyond the table have no embedding.</p>
+
+  <h3>RoPE — Rotary Position Embedding (LLaMA, Mistral)</h3>
+
+  <p>The dominant modern approach. Instead of adding a positional embedding to the token embedding, RoPE <strong>rotates</strong> the query and key vectors in 2D subspaces by a position-dependent angle. The dot product between rotated query $\tilde{q}_m$ and rotated key $\tilde{k}_n$ depends only on the relative position $m - n$, not the absolute positions. This gives the best extrapolation behavior and is used in virtually all modern LLMs.</p>
+</section>
+
+<!-- ============ 7. BLOCK ============ -->
+<section id="block">
+  <div class="chapter-mark"><span class="num">7</span> The building unit</div>
+  <h2>The transformer block — <em>attention + MLP + residuals</em></h2>
+
+  <p>A single transformer block combines multi-head attention with a position-wise feed-forward network (MLP), connected by residual connections and layer normalization. The standard "pre-norm" layout used in most modern LLMs:</p>
+
+  <div class="math-display">$$h' = \text{MultiHead}(\text{LN}(h)) + h$$</div>
+  <div class="math-display">$$h'' = \text{MLP}(\text{LN}(h')) + h'$$</div>
+
+  <p>Let's unpack each component's role in the information flow:</p>
+
+  <ul class="fancy">
+    <li><strong>Layer norm</strong> normalizes the input before each sub-layer. It stabilizes activations, preventing the internal values from drifting to extreme magnitudes over many layers. Pre-norm (before the sub-layer) is more stable than post-norm (after); this is why modern transformers use pre-norm.</li>
+    <li><strong>Multi-head attention</strong> enables tokens to exchange information — it is the only operation where different positions interact. Without attention, each token would be processed independently.</li>
+    <li><strong>Residual connection ($+ h$)</strong> adds the input directly to the output, so the sub-layer only needs to learn the <em>residual</em> — how much to change the representation. This provides a gradient highway (recall Chapter 01 §9) and is the reason 100+ layer transformers can train at all.</li>
+    <li><strong>MLP</strong> processes each token independently (no inter-token interaction). It applies a two-layer network that expands the dimension by 4×, applies GELU activation, then compresses back: $d \to 4d \to d$.</li>
+  </ul>
+
+  <p>A transformer is just $N$ of these blocks stacked. GPT-2 small: $N = 12$. LLaMA-7B: $N = 32$. LLaMA-70B: $N = 80$. The input enters the first block as token embeddings plus positional encodings; the output of the last block feeds into the language modeling head.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
+      <defs><marker id="ar-g" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7a7165"/></marker><marker id="ar-a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#b88528"/></marker></defs>
+      <text x="360" y="20" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">One pre-norm transformer block — the repeating unit of every GPT</text>
+      <rect x="30" y="80" width="60" height="40" rx="4" fill="#fff" stroke="#7a7165"/><text x="60" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830" font-weight="600">h</text>
+      <line x1="90" y1="100" x2="120" y2="100" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-g)"/>
+      <rect x="124" y="80" width="70" height="40" rx="4" fill="#506348"/><text x="159" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">LN</text>
+      <line x1="194" y1="100" x2="224" y2="100" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-g)"/>
+      <rect x="228" y="80" width="80" height="40" rx="4" fill="#8a3a5e"/><text x="268" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">Attn</text>
+      <line x1="308" y1="100" x2="328" y2="100" stroke="#7a7165" stroke-width="1.5"/>
+      <circle cx="342" cy="100" r="12" fill="#fff" stroke="#b88528" stroke-width="1.5"/><text x="342" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="14" fill="#b88528">+</text>
+      <polyline points="60,120 60,160 342,160 342,112" stroke="#b88528" stroke-width="1.5" stroke-dasharray="5,3" fill="none" marker-end="url(#ar-a)"/>
+      <text x="200" y="174" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#b88528">residual skip</text>
+      <line x1="354" y1="100" x2="384" y2="100" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-g)"/>
+      <rect x="388" y="80" width="70" height="40" rx="4" fill="#506348"/><text x="423" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">LN</text>
+      <line x1="458" y1="100" x2="488" y2="100" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-g)"/>
+      <rect x="492" y="80" width="70" height="40" rx="4" fill="#3a5a72"/><text x="527" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">MLP</text>
+      <line x1="562" y1="100" x2="582" y2="100" stroke="#7a7165" stroke-width="1.5"/>
+      <circle cx="596" cy="100" r="12" fill="#fff" stroke="#b88528" stroke-width="1.5"/><text x="596" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="14" fill="#b88528">+</text>
+      <polyline points="342,88 342,48 596,48 596,88" stroke="#b88528" stroke-width="1.5" stroke-dasharray="5,3" fill="none" marker-end="url(#ar-a)"/>
+      <text x="469" y="42" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="#b88528">residual skip</text>
+      <line x1="608" y1="100" x2="638" y2="100" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-g)"/>
+      <rect x="642" y="80" width="60" height="40" rx="4" fill="#fff" stroke="#7a7165"/><text x="672" y="104" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830" font-weight="600">h'</text>
+    </svg>
+    <figcaption>
+      The standard pre-norm transformer block: LN → Attention → add residual → LN → MLP → add residual. The residual connections (dashed gold) ensure gradient flow even through 100+ layers. The attention sub-layer enables inter-token communication; the MLP sub-layer processes each token independently.
+      <span class="src">Original SVG · architecture after Vaswani et al. (2017)</span>
     </figcaption>
   </figure>
 </section>
 
-<!-- ============ 4. MHA ============ -->
-<section id="mha">
-  <div class="chapter-mark"><span class="num">4</span> Multi-head attention</div>
-  <h2>Multiple views, <em>in parallel</em></h2>
+<!-- ============ 8. MLP ============ -->
+<section id="mlp">
+  <div class="chapter-mark"><span class="num">8</span> The hidden half</div>
+  <h2>What the MLP <em>actually does</em></h2>
 
-  <p>A single attention head computes one set of weights — one "view" of which tokens are relevant. But relevance is multifaceted. In "The cat sat on the mat because <strong>it</strong> was tired," the word "it" needs to attend to "cat" (coreference), "sat" (action), and "tired" (state) — different relationships that a single distribution cannot capture simultaneously.</p>
+  <p>The MLP is often treated as an afterthought — "just a feed-forward network." But it contains <strong>two-thirds of the transformer's parameters</strong> and plays a distinct, essential role that attention cannot fill.</p>
 
-  <p><span class="term">Multi-head attention</span> runs $h$ independent attention operations in parallel, each with its own $W_Q^{(i)}, W_K^{(i)}, W_V^{(i)}$ projection, then concatenates and projects the results:</p>
+  <p>Attention is a <em>mixing</em> operation — it combines information across tokens but does not transform individual token representations in expressive ways. The MLP is a <em>processing</em> operation — it transforms each token's representation independently through a nonlinear function. Together, they form a complete computational unit: attention gathers relevant context, then the MLP processes it.</p>
 
-  <div class="math-display">$$\text{MultiHead}(X) = \text{Concat}(\text{head}_1, \ldots, \text{head}_h)\, W_O$$</div>
+  <p>The 4× expansion is crucial: $\text{MLP}(x) = W_2\, \text{GELU}(W_1 x + b_1) + b_2$ where $W_1 \in \mathbb{R}^{4d \times d}$ and $W_2 \in \mathbb{R}^{d \times 4d}$. The expanded intermediate representation has 4 times the dimension of the input. This gives the network a high-dimensional space in which to compute nonlinear functions before compressing back. Without this expansion, the MLP would be too constrained to learn useful transformations.</p>
 
-  <p>Each head operates in a $d_k = d_\text{model}/h$ dimensional subspace. With $h=12$ heads and $d_\text{model}=768$ (GPT-2 small), each head has dimension 64. The total parameter cost is $4d_\text{model}^2$ — the same as a single-head version, but with far more representational flexibility.</p>
-
-  <div class="aside">
-    <div class="label">What heads learn (empirically)</div>
-    <p>Studies of trained transformers show that heads specialize: some learn positional patterns (attend to the previous token), some learn syntactic relationships (subject-verb agreement), some learn semantic similarity, and some are near-degenerate and could be pruned. This specialization emerges from training — it is not engineered.</p>
+  <div class="aside insight">
+    <div class="label">MLPs as key-value memories</div>
+    <p>Recent research suggests that MLP layers act as <strong>associative memories</strong>: each row of $W_1$ is a "key" that matches certain input patterns, and the corresponding row of $W_2$ is the "value" that gets written to the residual stream when that key matches. In this view, the MLP stores factual knowledge (e.g., "the capital of France is Paris") while attention routes information between positions. This is the theoretical basis for knowledge editing and MoE architectures (Chapter 10).</p>
   </div>
 </section>
 
-<!-- ============ 5. POSITIONAL ============ -->
-<section id="pos">
-  <div class="chapter-mark"><span class="num">5</span> Position</div>
-  <h2>Positional <em>encoding</em></h2>
-
-  <p>Attention treats its input as a <em>set</em> — it is permutation-equivariant. "The dog bit the man" and "The man bit the dog" produce the same attention scores (just shuffled). But order matters enormously in language. <span class="term">Positional encodings</span> inject position information.</p>
-
-  <p>Three approaches, in historical order:</p>
-
-  <ul class="fancy">
-    <li><strong>Sinusoidal</strong> (original transformer, 2017): fixed sine/cosine functions at different frequencies: $PE_{(\text{pos}, 2i)} = \sin(\text{pos}/10000^{2i/d})$. Zero parameters. Can theoretically extrapolate to longer sequences. Elegant: relative position is recoverable via a linear transformation.</li>
-    <li><strong>Learned</strong> (BERT, GPT-2): a trainable matrix $P \in \mathbb{R}^{n_\text{max} \times d}$. More flexible but cannot extrapolate beyond $n_\text{max}$.</li>
-    <li><strong>RoPE</strong> (LLaMA, Mistral, modern LLMs): rotates Q and K vectors in 2D subspaces by position-dependent angles. The dot product $\tilde{q}_m^T \tilde{k}_n$ depends only on relative position $m - n$. Best extrapolation; dominant in practice.</li>
-  </ul>
-</section>
-
-<!-- ============ 6. BLOCK ============ -->
-<section id="block">
-  <div class="chapter-mark"><span class="num">6</span> The block</div>
-  <h2>The transformer block — <em>the repeating unit</em></h2>
-
-  <p>A single transformer block combines multi-head attention with a feed-forward network (MLP), connected by residual connections and layer normalization. The standard "pre-norm" layout:</p>
-
-  <div class="math-display">$$h' = \text{Attention}(\text{LN}(h)) + h$$</div>
-  <div class="math-display">$$h'' = \text{MLP}(\text{LN}(h')) + h'$$</div>
-
-  <p>A transformer is just $N$ of these blocks stacked. GPT-2 small has 12; GPT-3 has 96; LLaMA 70B has 80. The input enters the first block as token embeddings plus positional encodings; the output of the last block feeds into the prediction head.</p>
-
-  <p>The <strong>MLP</strong> inside each block is typically a two-layer network that expands the dimension by 4× then compresses back: $d_\text{model} \to 4 \times d_\text{model} \to d_\text{model}$, with GELU activation between. This is where most of the parameters live — about two-thirds of a transformer's parameters are in the MLP layers (recall MoE, Chapter 10, which replaces these with specialist experts).</p>
-</section>
-
-<!-- ============ 7. ARCH ============ -->
+<!-- ============ 9. ARCH ============ -->
 <section id="arch">
-  <div class="chapter-mark"><span class="num">7</span> Architectures</div>
+  <div class="chapter-mark"><span class="num">9</span> Architectures</div>
   <h2>Encoder, decoder, or <em>both</em></h2>
 
   <div class="compare">
     <div style="border-top-color:#3a5a72">
       <h4 style="font-family:'Fraunces',serif;font-weight:500;font-style:italic;font-size:20px;color:#3a5a72">Encoder-only</h4>
-      <p style="font-size:16px;line-height:1.55">Bidirectional attention (every token sees every other). Good for understanding: classification, NER, similarity. <strong>BERT</strong> is the classic example.</p>
+      <p style="font-size:16px;line-height:1.55"><strong>Bidirectional</strong> attention — every token sees every other token. The causal mask is removed entirely; position 3 can attend to positions 1, 2, 4, and 5. Ideal for <em>understanding</em> tasks: classification, named-entity recognition, sentence similarity. <strong>BERT</strong> is the canonical example, trained with masked language modeling (predict randomly masked tokens).</p>
     </div>
     <div style="border-top-color:#8a3a5e">
       <h4 style="font-family:'Fraunces',serif;font-weight:500;font-style:italic;font-size:20px;color:#8a3a5e">Decoder-only</h4>
-      <p style="font-size:16px;line-height:1.55">Causal (left-to-right) attention. Good for generation: language modeling, code, chat. <strong>GPT, LLaMA, Mistral</strong> — nearly all modern LLMs.</p>
+      <p style="font-size:16px;line-height:1.55"><strong>Causal</strong> (left-to-right) attention — each token can only see tokens before it. The natural architecture for generation. <strong>GPT, LLaMA, Mistral, Claude</strong> — nearly all modern LLMs. Trained with next-token prediction. Can also handle understanding tasks by treating them as generation problems (prompting).</p>
     </div>
   </div>
 
-  <p>There is also the <strong>encoder-decoder</strong> architecture (T5, BART, the original transformer for machine translation), which uses bidirectional attention in the encoder and causal + cross-attention in the decoder. Covered in depth in Chapter 08.</p>
+  <p>The <strong>encoder-decoder</strong> architecture (T5, BART, the original transformer, Whisper) uses bidirectional attention in the encoder and causal attention + cross-attention in the decoder. The encoder processes the input with full bidirectional context; the decoder generates the output autoregressively, attending to the encoder's representations via cross-attention. This is covered in depth in Chapter 08.</p>
 
-  <div class="pullquote">"Today, decoder-only is the default for language models. If someone says 'transformer' without qualification, they almost certainly mean a causal decoder."</div>
+  <p>Since 2022, decoder-only architectures have dominated. The key discovery: a sufficiently large decoder-only model, trained on enough data, can match or exceed encoder-only and encoder-decoder models on virtually every task — understanding, generation, translation, summarization, reasoning — using appropriate prompting.</p>
 </section>
 
-<!-- ============ 8. GPT ============ -->
+<!-- ============ 10. GPT ============ -->
 <section id="gpt">
-  <div class="chapter-mark"><span class="num">8</span> Putting it together</div>
+  <div class="chapter-mark"><span class="num">10</span> The full stack</div>
   <h2>The <em>GPT</em> architecture</h2>
 
   <figure>
     <svg viewBox="0 0 720 420" xmlns="http://www.w3.org/2000/svg" style="background:#fff;display:block">
-      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">GPT: token embeddings + positional encodings → N transformer blocks → output head</text>
-      <!-- Input -->
-      <rect x="260" y="370" width="200" height="34" rx="4" fill="#fff" stroke="#7a7165"/>
-      <text x="360" y="392" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830" font-weight="600">Token IDs [4, 129, 55, 2201]</text>
-      <!-- Arrow up -->
+      <text x="360" y="22" text-anchor="middle" font-family="Fraunces,serif" font-style="italic" font-size="13" fill="#3d3830">GPT: embeddings → N blocks → output head · bottom to top</text>
+      <defs><marker id="ar-up" markerWidth="8" markerHeight="8" refX="3" refY="6" orient="auto"><path d="M0,6 L3,0 L6,6 Z" fill="#7a7165"/></marker></defs>
+      <rect x="260" y="370" width="200" height="34" rx="4" fill="#fff" stroke="#7a7165"/><text x="360" y="392" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#3d3830" font-weight="600">Token IDs [4, 129, 55, 2201]</text>
       <line x1="360" y1="370" x2="360" y2="348" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-up)"/>
-      <!-- Embedding -->
-      <rect x="240" y="310" width="240" height="34" rx="4" fill="#b88528"/>
-      <text x="360" y="332" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">Embedding + Positional Encoding</text>
-      <!-- Arrow up -->
+      <rect x="240" y="310" width="240" height="34" rx="4" fill="#b88528"/><text x="360" y="332" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">Embedding + Positional Encoding</text>
       <line x1="360" y1="310" x2="360" y2="290" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-up)"/>
-      <!-- Transformer blocks (stacked) -->
       <rect x="200" y="110" width="320" height="176" rx="6" fill="#fcf8ee" stroke="#8a3a5e" stroke-width="1.5" stroke-dasharray="5,3"/>
       <text x="530" y="200" font-family="JetBrains Mono,monospace" font-size="10" fill="#8a3a5e" font-weight="600" transform="rotate(90 530 200)">× N blocks</text>
-      <!-- Block 1 -->
-      <g transform="translate(220,120)">
-        <rect width="280" height="24" rx="3" fill="#506348"/>
-        <text x="140" y="16" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">LayerNorm → Multi-Head Attention → + Residual</text>
-      </g>
-      <g transform="translate(220,152)">
-        <rect width="280" height="24" rx="3" fill="#8a3a5e"/>
-        <text x="140" y="16" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">LayerNorm → MLP (4× expand, GELU) → + Residual</text>
-      </g>
-      <!-- Dots for more blocks -->
+      <g transform="translate(220,120)"><rect width="280" height="24" rx="3" fill="#506348"/><text x="140" y="16" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">LayerNorm → Multi-Head Causal Attention → + Residual</text></g>
+      <g transform="translate(220,152)"><rect width="280" height="24" rx="3" fill="#3a5a72"/><text x="140" y="16" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">LayerNorm → MLP (d→4d→d, GELU) → + Residual</text></g>
       <text x="360" y="200" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="14" fill="#7a7165">⋮</text>
-      <!-- Block N -->
-      <g transform="translate(220,214)">
-        <rect width="280" height="24" rx="3" fill="#506348"/>
-        <text x="140" y="16" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">LayerNorm → Multi-Head Attention → + Residual</text>
-      </g>
-      <g transform="translate(220,246)">
-        <rect width="280" height="24" rx="3" fill="#8a3a5e"/>
-        <text x="140" y="16" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">LayerNorm → MLP (4× expand, GELU) → + Residual</text>
-      </g>
-      <!-- Arrow up -->
+      <g transform="translate(220,214)"><rect width="280" height="24" rx="3" fill="#506348"/><text x="140" y="16" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">LayerNorm → Multi-Head Causal Attention → + Residual</text></g>
+      <g transform="translate(220,246)"><rect width="280" height="24" rx="3" fill="#3a5a72"/><text x="140" y="16" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">LayerNorm → MLP (d→4d→d, GELU) → + Residual</text></g>
       <line x1="360" y1="110" x2="360" y2="90" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-up)"/>
-      <!-- Final LN -->
-      <rect x="280" y="62" width="160" height="24" rx="4" fill="#506348"/>
-      <text x="360" y="78" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">Final LayerNorm</text>
-      <!-- Arrow up -->
+      <rect x="280" y="62" width="160" height="24" rx="4" fill="#506348"/><text x="360" y="78" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#fff" font-weight="600">Final LayerNorm</text>
       <line x1="360" y1="62" x2="360" y2="50" stroke="#7a7165" stroke-width="1.5" marker-end="url(#ar-up)"/>
-      <!-- Output head -->
-      <rect x="240" y="16" width="240" height="30" rx="4" fill="#b03d1a"/>
-      <text x="360" y="36" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">Linear (d → vocab) → Softmax → P(next token)</text>
-      <defs><marker id="ar-up" markerWidth="8" markerHeight="8" refX="3" refY="6" orient="auto"><path d="M0,6 L3,0 L6,6 Z" fill="#7a7165"/></marker></defs>
+      <rect x="240" y="16" width="240" height="30" rx="4" fill="#b03d1a"/><text x="360" y="36" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#fff" font-weight="600">Linear (d → vocab) → Softmax → P(next token)</text>
     </svg>
     <figcaption>
-      The full GPT architecture, bottom to top. Token IDs enter at the bottom, get embedded and position-encoded, pass through N stacked transformer blocks (each containing attention + MLP with residual connections), through a final layer norm, and into a linear projection to vocabulary-size logits. Softmax converts logits to next-token probabilities.
+      The full GPT architecture, bottom to top. Token IDs are embedded, position-encoded, and processed through $N$ transformer blocks. The final layer norm feeds into a linear projection to vocabulary-size logits, and softmax produces a probability distribution over the next token. In many implementations, the output projection matrix shares weights with the embedding matrix (weight tying).
       <span class="src">Original SVG · architecture after Radford et al. (2018/2019)</span>
     </figcaption>
   </figure>
+
+  <p><strong>Weight tying:</strong> a common trick where the output projection matrix $W_\text{output} \in \mathbb{R}^{V \times d}$ shares weights with the embedding matrix $W_\text{embed} \in \mathbb{R}^{V \times d}$. The intuition: generating a token (projecting the hidden state onto vocabulary space) should use the same representation as reading a token (embedding it). This reduces parameters and often improves performance.</p>
 </section>
 
-<!-- ============ 9. TRAINING ============ -->
+<!-- ============ 11. TRAINING ============ -->
 <section id="train">
-  <div class="chapter-mark"><span class="num">9</span> Training</div>
+  <div class="chapter-mark"><span class="num">11</span> Training</div>
   <h2>Next-token prediction — <em>the only objective</em></h2>
 
-  <p>The training objective for a causal language model is shockingly simple: given a sequence of tokens $x_1, x_2, \ldots, x_n$, maximize the probability of each token given all preceding tokens:</p>
+  <div class="math-display">$$\mathcal{L} = -\frac{1}{T}\sum_{t=1}^{T} \log P_\theta(x_t \mid x_1, \ldots, x_{t-1})$$</div>
 
-  <div class="math-display">$$\mathcal{L} = -\frac{1}{n}\sum_{t=1}^{n} \log P_\theta(x_t \mid x_1, \ldots, x_{t-1})$$</div>
+  <p>This is cross-entropy loss at every position, averaged over the sequence. The model sees a batch of text, predicts the next token at every position <em>in parallel</em> (thanks to causal masking), and receives a gradient for every prediction.</p>
 
-  <p>This is cross-entropy loss — the same loss from Chapter 01 §5. The model sees a batch of text, predicts the next token at every position (in parallel, thanks to the causal mask), and receives a gradient for every prediction. No labels needed beyond the text itself — the next token <em>is</em> the label. This is <span class="term">self-supervised learning</span>: the data provides its own supervision.</p>
+  <p>No labels needed beyond the text itself — the next token IS the label. This is <span class="term">self-supervised learning</span>. The entire internet becomes a training set. This unlimited data supply, combined with the clean loss function and full parallelism, is why autoregressive transformers have scaled to trillions of parameters while other architectures hit data and compute walls.</p>
+
+  <h3>Teacher forcing</h3>
+  <p>During training, the model receives the ground-truth tokens at every position (not its own predictions). This is called <span class="term">teacher forcing</span> — the "teacher" provides the correct prefix at each step. Without teacher forcing, early mistakes would compound: a wrong prediction at position 5 would mean positions 6, 7, 8, etc. are all conditioned on an incorrect prefix, making learning very slow.</p>
+
+  <h3>The training recipe</h3>
+  <p>The standard transformer training recipe (established by GPT-2/3 and refined by Chinchilla and LLaMA):</p>
+
+  <ul class="fancy">
+    <li><strong>Optimizer:</strong> AdamW with $\beta_1 = 0.9$, $\beta_2 = 0.95$, weight decay $0.1$.</li>
+    <li><strong>Learning rate schedule:</strong> linear warmup over the first ~2000 steps, then cosine decay to 10% of the peak LR. The warmup prevents early training instability; the cosine decay provides a smooth annealing.</li>
+    <li><strong>Gradient clipping:</strong> clip the global gradient norm to 1.0 to prevent explosive updates.</li>
+    <li><strong>Batch size:</strong> as large as possible — modern LLM training uses effective batch sizes of millions of tokens per step, achieved via gradient accumulation across many GPUs.</li>
+  </ul>
 
   <div class="aside insight">
     <div class="label">The unreasonable effectiveness of next-token prediction</div>
-    <p>To predict the next token well, the model must learn syntax, semantics, reasoning, world knowledge, common sense, and style — all compressed into a single objective. This is why scaling works: more parameters and more data directly translate to better next-token prediction, which translates to better performance on essentially every downstream task.</p>
+    <p>To predict the next token well, the model must learn syntax (grammar rules), semantics (word meanings and relationships), pragmatics (conversational conventions), reasoning (logical chains), world knowledge (facts about the world), and style (register, tone, genre). All compressed into a single objective. This is why scaling works: more parameters and more data directly translate to better next-token prediction, which translates to better performance on essentially every downstream task — a phenomenon called "emergent capabilities at scale."</p>
   </div>
 </section>
 
-<!-- ============ 10. FIELD NOTES ============ -->
+<!-- ============ 12. FIELD NOTES ============ -->
 <section id="fieldnotes">
-  <div class="chapter-mark"><span class="num">10</span> Field notes</div>
+  <div class="chapter-mark"><span class="num">12</span> Field notes</div>
   <h2>Training a transformer on <em>sequence reversal</em></h2>
 
-  <p>The companion notebook builds a decoder-only transformer from scratch (~600 lines of PyTorch) and trains it on a clean pedagogical task: reversing sequences of digits. Input: <code>3 1 4 | ? ? ?</code>. Target: <code>3 1 4 | 4 1 3</code>.</p>
-
-  <div class="aside">
-    <div class="label">Source</div>
-    <p>Experiments from the <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/02-transformers/notebook.ipynb">Module 02 notebook</a> in the <code>learn-generative-ai</code> repo.</p>
-  </div>
+  <div class="aside"><div class="label">Source</div>
+  <p>Experiments from the <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/02-transformers/notebook.ipynb">Module 02 notebook</a>. Builds a decoder-only transformer from scratch (~600 lines of PyTorch) and trains it on digit sequence reversal.</p></div>
 
   <h3>Why sequence reversal?</h3>
-
-  <p>It's a task that <em>requires</em> attention to solve well. The model must learn that the token in output position 1 should attend to input position $n$, position 2 to position $n-1$, and so on. A model that merely copies or predicts based on local context will fail. When it succeeds, we can verify it learned the right attention pattern by visualizing the attention maps.</p>
+  <p>It's a task that <em>requires</em> attention to solve. The model must learn that output position 1 should copy from input position $n$, output position 2 from position $n-1$, and so on. A model that merely copies or uses local context will fail. Success requires long-range, position-dependent attention — and when it works, we can verify the learned algorithm by examining the attention maps.</p>
 
   <h3>Attention maps reveal the learned algorithm</h3>
+  <p>After training, extracting attention weights from the output positions reveals a strikingly clean <strong>anti-diagonal pattern</strong>: output token 1 attends almost exclusively to input token $n$, output token 2 to $n-1$, and so on. The model has literally learned to "look at the right place." The attention mechanism is implementing a reversal algorithm — and we can see it directly in the attention weights.</p>
 
-  <p>After training, extracting the attention weights from the output positions reveals a strikingly clean anti-diagonal pattern: output token 1 attends almost exclusively to input token $n$, output token 2 to $n-1$, and so on. The model has literally learned to "look at the right place" — the attention mechanism is implementing a reversal algorithm, and we can see it directly in the attention matrix.</p>
+  <h3>Head specialization and entropy</h3>
+  <p>Measuring attention entropy per head reveals functional specialization. The reversal-specialized heads have <strong>very low entropy</strong> — they place nearly all weight on a single position (the correct source position for each output). Other heads have higher entropy, attending more broadly — these handle contextual tasks like separator detection. This is the multi-head principle in action: different heads learn different patterns, and the network routes each task to the appropriate head.</p>
 
-  <h3>Head specialization</h3>
-
-  <p>The notebook also measures attention entropy per head. Some heads have low entropy (sharp, focused attention — looking at exactly one position), while others have high entropy (diffuse attention — gathering context broadly). The reversal-specialized heads have very low entropy — they have learned to attend to exactly one input position per output position. Other heads maintain higher entropy, presumably handling residual contextual tasks.</p>
-
-  <h3>Temperature sampling</h3>
-
-  <p>At inference time, varying the temperature of the output softmax changes the model's behavior: at $\tau = 0.1$, the model always picks the highest-probability token (essentially greedy decoding) and gets the reversal right. At $\tau = 2.0$, sampling introduces randomness and the model occasionally makes mistakes — even though it "knows" the right answer, the soft distribution allows incorrect tokens to be sampled.</p>
+  <h3>Temperature effects on generation</h3>
+  <p>At $\tau = 0.1$ (near-deterministic), the model always picks the highest-probability token and gets reversals correct. At $\tau = 2.0$ (high randomness), sampling introduces errors — the model "knows" the right answer but the soft distribution allows incorrect tokens to be sampled occasionally. This demonstrates the fundamental tradeoff between deterministic accuracy and stochastic diversity that governs all autoregressive generation (covered in depth in Chapter 07).</p>
 </section>
 
-<!-- ============ 11. PLAYGROUND ============ -->
+<!-- ============ 13. PLAYGROUND ============ -->
 <section id="playground">
-  <div class="chapter-mark"><span class="num">11</span> Playground</div>
+  <div class="chapter-mark"><span class="num">13</span> Playground</div>
   <h2>Interactive: <em>Transformer Explainer</em></h2>
 
-  <p>The best way to build intuition for how a transformer works is to watch one run. The Transformer Explainer, built by Cho et al. at Georgia Tech's Polo Club, runs GPT-2 (small, 124M parameters) live in your browser. You can type your own prompt, watch tokens flow through the embedding layer, observe attention patterns across all 12 heads, see the MLP expansion and compression, and experiment with temperature, top-k, and top-p sampling.</p>
+  <p>The Transformer Explainer, built by Cho et al. at Georgia Tech's Polo Club, runs GPT-2 (124M parameters) live in your browser. Type a prompt, watch tokens flow through embeddings, attention layers, and MLPs, observe attention patterns, and experiment with sampling parameters.</p>
 
-  <p>Try these experiments in the tool:</p>
+  <p>Try these experiments:</p>
 
   <ol class="fancy">
-    <li>Type "The capital of France is" and generate. Look at the attention pattern for "is" — which earlier tokens does it attend to most?</li>
-    <li>Set temperature to 0.1 (near-deterministic) and generate several tokens. Then set it to 2.0 (high randomness) and regenerate. Compare the diversity of outputs.</li>
-    <li>Expand the attention view and find a head that shows a strong "attend to previous token" pattern (a diagonal stripe in the attention matrix).</li>
-    <li>Watch the final softmax distribution. How peaked is it? Does the top token have 90% probability, or is it more spread out?</li>
+    <li>Type "The capital of France is" and generate. Examine the attention pattern for "is" — which earlier tokens does it attend to? You should see strong attention to "France" and "capital."</li>
+    <li>Set temperature to 0.1, generate several tokens. Then set it to 2.0. At low temperature, the model picks the most likely next token deterministically. At high temperature, rare tokens get sampled, producing surprising (often nonsensical) text.</li>
+    <li>Expand the attention view and look for a "previous-token head" — a head showing a diagonal stripe in the attention matrix (each token attending to the token immediately before it). This positional pattern is one of the most common head specializations.</li>
+    <li>Watch the final softmax distribution. How peaked is it? For factual continuations ("The capital of France is ..."), the distribution is usually very peaked (one token has >90% probability). For open-ended prompts ("Once upon a ..."), it's more spread out.</li>
   </ol>
 
   <div class="iframe-wrap">
@@ -610,34 +604,36 @@ footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(-
     </div>
   </div>
 
-  <p class="note" style="margin-top:18px">The embedded tool runs a real GPT-2 model in your browser via ONNX Runtime. It may take a few seconds to load the model weights on first visit. If the embed doesn't load, <a href="https://poloclub.github.io/transformer-explainer/" target="_blank">open it directly ↗</a>.</p>
+  <p style="margin-top:18px">The tool runs a real GPT-2 model via ONNX Runtime. It may take a few seconds to load. If the embed doesn't work, <a href="https://poloclub.github.io/transformer-explainer/" target="_blank">open it directly ↗</a>.</p>
 </section>
 
 <div class="ornament">⁂ ⁂ ⁂</div>
 
-<!-- ============ 12. TAKEAWAYS ============ -->
+<!-- ============ 14. TAKEAWAYS ============ -->
 <section id="takeaways">
-  <div class="chapter-mark"><span class="num">12</span> Closing</div>
+  <div class="chapter-mark"><span class="num">14</span> Closing</div>
   <h2>Takeaways &amp; <em>exercises</em></h2>
 
-  <h3>The six things to remember</h3>
+  <h3>The seven things to carry forward</h3>
 
   <ol class="fancy">
-    <li><strong>Attention is a soft dictionary lookup:</strong> Q asks the question, K advertises the content, V provides the answer, softmax(QKᵀ/√d_k) is the matching score.</li>
-    <li><strong>The √d_k scaling prevents softmax saturation</strong> — the same variance-preserving trick that appears in weight init and diffusion noise schedules.</li>
-    <li><strong>Multi-head attention gives multiple views</strong> at no extra cost — the total parameter count is the same as single-head, but the representational capacity is far higher.</li>
-    <li><strong>Causal masking makes generation autoregressive</strong> — each token can only see tokens before it. This is enforced by setting future positions to $-\infty$ before softmax.</li>
-    <li><strong>The training objective is just next-token prediction</strong> — cross-entropy loss at every position, self-supervised, embarrassingly parallel.</li>
-    <li><strong>Position must be injected explicitly</strong> — attention is a set operation. Sinusoidal, learned, and RoPE are three approaches; RoPE dominates modern LLMs.</li>
+    <li><strong>Attention is a soft dictionary lookup:</strong> Q asks the question, K advertises the content, V provides the answer. The softmax(QKᵀ/√d_k) formula computes match scores, normalizes them, and aggregates values.</li>
+    <li><strong>The √d_k scaling prevents softmax saturation</strong> — without it, large dot products push softmax into near-zero gradient regions, preventing learning.</li>
+    <li><strong>Multi-head attention gives multiple simultaneous views.</strong> Each head can track a different relationship (syntax, semantics, position). The total parameter count is the same as single-head attention with the same dimension.</li>
+    <li><strong>Causal masking enables parallel training of sequential generation.</strong> The lower-triangular mask ensures each position only sees past tokens, so every position receives the correct training signal simultaneously.</li>
+    <li><strong>Position must be injected explicitly</strong> because attention is a set operation. Sinusoidal, learned, and RoPE are three approaches; RoPE dominates modern LLMs because it encodes relative position and extrapolates well.</li>
+    <li><strong>The MLP contains two-thirds of the parameters</strong> and processes each token independently. It acts as a nonlinear processing step and may function as an associative key-value memory for storing factual knowledge.</li>
+    <li><strong>The training objective is next-token prediction</strong> — cross-entropy at every position, self-supervised, embarrassingly parallel. To predict well, the model must learn everything about language.</li>
   </ol>
 
   <div class="aside check">
     <div class="label">Exercises</div>
-    <p><strong>1.</strong> If $Q, K \in \mathbb{R}^{n \times d_k}$, what is the shape of $QK^T$? What does entry $(i,j)$ represent?</p>
-    <p><strong>2.</strong> GPT-2 small has $d_\text{model} = 768$ and $h = 12$ heads. What is $d_k$ per head? How many parameters are in the $W_Q, W_K, W_V, W_O$ matrices combined?</p>
-    <p><strong>3.</strong> Open the Transformer Explainer above. Type "She went to the" and generate. Which token does "the" attend to most strongly in head 0? Does this match your intuition about what "the" needs to predict the next word?</p>
+    <p><strong>1.</strong> If $Q, K \in \mathbb{R}^{n \times d_k}$, what is the shape of $QK^T$? What does entry $(i,j)$ represent? Verify using the worked example in §3.</p>
+    <p><strong>2.</strong> GPT-2 small has $d_\text{model} = 768$ and $h = 12$ heads. Compute $d_k$ per head. How many parameters are in $W_Q, W_K, W_V, W_O$ combined? What fraction of the block's total parameters does attention account for?</p>
+    <p><strong>3.</strong> Open the Transformer Explainer. Type "She went to the" and generate. Which token does "the" attend to most strongly in head 0? Try different heads — which ones show positional patterns vs content-based patterns?</p>
     <p><strong>4.</strong> Open the Module 02 notebook. Train the transformer on sequence reversal. Visualize the attention maps for the output positions. Do you see the anti-diagonal pattern? Which head(s) learn it most cleanly?</p>
-    <p><strong>5.</strong> Why does the MLP expand by 4× then compress back? What would happen if you removed the MLP entirely and only kept the attention layers? (Hint: think about what attention can and cannot do to individual token representations.)</p>
+    <p><strong>5.</strong> Consider removing the MLP entirely (keeping only attention + residual). What would happen? Think about what attention can and cannot do to individual token representations, and why the MLP's 4× expansion matters.</p>
+    <p><strong>6.</strong> Explain why pre-norm (LN before the sub-layer) is more stable than post-norm (LN after). Hint: consider the gradient flow through the residual connection in each case.</p>
   </div>
 
   <h3>Further reading</h3>
@@ -645,16 +641,18 @@ footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(-
   <ul class="fancy">
     <li>Vaswani et al. (2017) — <em>Attention Is All You Need</em>. The paper. Read it.</li>
     <li>Alammar (2018) — <em>The Illustrated Transformer</em>. The best visual walkthrough.</li>
-    <li>Radford et al. (2018, 2019) — <em>GPT</em> and <em>GPT-2</em>. Decoder-only transformers for language modeling.</li>
-    <li>Devlin et al. (2019) — <em>BERT</em>. Encoder-only transformers for understanding.</li>
-    <li>Su et al. (2021) — <em>RoFormer: Enhanced Transformer with Rotary Position Embedding</em>.</li>
-    <li>Cho et al. (2024) — <em>Transformer Explainer</em>. The interactive visualization embedded above.</li>
-    <li>P. Kulkarni — <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/02-transformers/notebook.ipynb"><em>Module 02 notebook</em></a>. Transformer from scratch, sequence reversal, attention analysis.</li>
+    <li>Radford et al. (2018, 2019) — <em>GPT</em> and <em>GPT-2</em>. Decoder-only for language modeling.</li>
+    <li>Devlin et al. (2019) — <em>BERT</em>. Encoder-only for understanding.</li>
+    <li>Su et al. (2021) — <em>RoFormer: Rotary Position Embedding</em>.</li>
+    <li>Olsson et al. (2022) — <em>In-Context Learning and Induction Heads</em>. Mechanistic interpretability.</li>
+    <li>Geva et al. (2021) — <em>Transformer Feed-Forward Layers Are Key-Value Memories</em>.</li>
+    <li>Cho et al. (2024) — <em>Transformer Explainer</em>. The interactive visualization above.</li>
+    <li>P. Kulkarni — <a href="https://github.com/prashantkul/learn-generative-ai/blob/main/02-transformers/notebook.ipynb"><em>Module 02 notebook</em></a>. Transformer from scratch, sequence reversal.</li>
   </ul>
 </section>
 
 <footer>
-  <p style="margin-bottom:14px">All figures in this tutorial are original SVG illustrations. The interactive Transformer Explainer in §11 is by Cho et al. (Georgia Tech Polo Club), embedded with attribution under MIT License. Conceptual structure draws on the companion notes and the foundational papers cited above.</p>
+  <p style="margin-bottom:14px">All figures are original SVG illustrations. The Transformer Explainer in §13 is by Cho et al. (Georgia Tech Polo Club), embedded with attribution under MIT License.</p>
   <hr style="border:none;border-top:1px solid var(--rule);margin:24px 0">
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
     <div><div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#7a7165;margin-bottom:6px">Author</div><div>Prashant Kulkarni<br><span style="color:#7a7165">with help from Claude Opus (Anthropic)</span></div></div>
@@ -667,7 +665,6 @@ footer a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(-
 </div>
 
 <script>
-// TOC highlight
 const sections = document.querySelectorAll('section[id]');
 const tocLinks = document.querySelectorAll('.toc a');
 const observer = new IntersectionObserver((entries) => {
